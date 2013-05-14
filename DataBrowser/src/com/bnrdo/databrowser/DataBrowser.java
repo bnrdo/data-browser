@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 
 import javax.swing.JPanel;
 
+import com.bnrdo.databrowser.exception.ModelException;
 import com.bnrdo.databrowser.mvc.DataBrowserController;
 import com.bnrdo.databrowser.mvc.DataBrowserModel;
 import com.bnrdo.databrowser.mvc.DataBrowserView;
@@ -25,11 +26,11 @@ public class DataBrowser extends JPanel {
         add(view.getUI(), BorderLayout.CENTER);
     }
 
-    public void setPagination(Pagination p) {
+    public void setPagination(Pagination p) {    	
         model.setPagination(p);
     }
-}
-
-interface PaginationListener {
-    void pageChanged(int pageNum);
+    
+    public DataBrowserModel getModel(){
+    	return model;
+    }
 }

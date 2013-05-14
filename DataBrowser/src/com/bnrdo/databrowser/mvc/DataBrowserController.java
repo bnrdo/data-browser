@@ -10,10 +10,12 @@ import javax.swing.JComboBox;
 
 
 import com.bnrdo.databrowser.Pagination;
+import com.bnrdo.databrowser.listener.ModelListener;
+import com.bnrdo.databrowser.listener.PaginationListener;
 import com.bnrdo.databrowser.exception.ViewException;
 import com.bnrdo.databrowser.mvc.DataBrowserView.PageButton;
 
-public class DataBrowserController implements PropertyChangeListener {
+public class DataBrowserController implements ModelListener {
     private DataBrowserView view;
     private DataBrowserModel model;
 
@@ -24,7 +26,11 @@ public class DataBrowserController implements PropertyChangeListener {
     }
 
     public void control() {
-        view.getDataTable().setModel(model.getDataTableModel());
+    	assembleDataTable();
+    }
+    
+    private void assembleDataTable(){
+    	view.getDataTable().setModel(model.getDataTableModel());
     }
 
     private void assemblePageEvents() {
@@ -79,37 +85,47 @@ public class DataBrowserController implements PropertyChangeListener {
 
     /* Code when the model has changed some of its property */
 
+    
+    private void pageNumsExposedChanged(int[] newVal){
+        view.refreshPageNumbers(newVal);
+        assemblePageEvents();
+    }
+    private void currentPageNumChanged(int newVal){
+    	PageButton [] btns = view.getPageBtns();
+        int lastPageNum = model.getPagination().getLastRawPageNum();
+        int firstPageNum = model.getPagination().getFirstRawPageNum();
+
+        // synch button selection based on currentpagenum from the model and
+        // its text
+        
+        for (PageButton btn : btns) {
+            btn.setSelected(Integer.parseInt(btn.getText()) == newVal);
+        }
+
+        view.getBtnFirst().setVisible(!(newVal == firstPageNum));
+        view.getBtnPrev().setVisible(!(newVal == firstPageNum));
+        view.getBtnNext().setVisible(!(newVal == lastPageNum));
+        view.getBtnLast().setVisible(!(newVal == lastPageNum));
+    }
+    
     public void propertyChange(PropertyChangeEvent evt) {
         String propName = evt.getPropertyName();
         Object newVal = evt.getNewValue();
 
-        if (Pagination.FN_CURRENT_PAGE_NUMBER.equalsIgnoreCase(propName)
-                && model.getPagination().getPageNumsExposed().length > 1) {
-            PageButton [] btns = view.getPageBtns();
-            int selectedPageNum = (Integer) newVal;
-            int lastPageNum = model.getPagination().getLastRawPageNum();
-            int firstPageNum = model.getPagination().getFirstRawPageNum();
-
-            // synch button selection based on currentpagenum from the model and
-            // its text
-
-            // bug, kasi kapag last ung pinindot
-            for (PageButton btn : btns) {
-                btn
-                        .setSelected(Integer.parseInt(btn.getText()) == selectedPageNum);
-            }
-
-            view.getBtnFirst().setVisible(!(selectedPageNum == firstPageNum));
-            view.getBtnPrev().setVisible(!(selectedPageNum == firstPageNum));
-            view.getBtnNext().setVisible(!(selectedPageNum == lastPageNum));
-            view.getBtnLast().setVisible(!(selectedPageNum == lastPageNum));
-
-        } else if (Pagination.FN_PAGE_NUMS_EXPOSED.equalsIgnoreCase(propName)) {
-            int [] newNumsExposed = (int []) newVal;
-
-            view.refreshPageNumbers(newNumsExposed);
-            assemblePageEvents();
-        } else if (DataBrowserModel.FN_SEARCH_FILTER_LIST
+        if(DataBrowserModel.FN_PAGINATION.equalsIgnoreCase(propName)){
+        	
+        	final Pagination newPagination = (Pagination) newVal;
+        	pageNumsExposedChanged(newPagination.getPageNumsExposed());
+            currentPageNumChanged(newPagination.getCurrentPageNum());
+            
+            newPagination.addPaginationListener(new PaginationListener(){
+				public void pageChanged(int pageNum) {
+					pageNumsExposedChanged(newPagination.getPageNumsExposed());
+		            currentPageNumChanged(newPagination.getCurrentPageNum());
+				}
+            });
+        }
+        else if (DataBrowserModel.FN_SEARCH_FILTER_LIST
                 .equalsIgnoreCase(propName)) {
             List<String> newFilters = (List<String>) newVal;
             JComboBox cbo = view.getCboSearch();
@@ -117,6 +133,11 @@ public class DataBrowserController implements PropertyChangeListener {
             for (String items : newFilters) {
                 cbo.addItem(items);
             }
+        }
+        else if(DataBrowserModel.FN_DATA_TABLE_MODEL
+                .equalsIgnoreCase(propName)){
+        	assembleDataTable();
+        	
         }
     }
 }

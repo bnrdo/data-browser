@@ -7,6 +7,7 @@ import java.util.List;
 import javax.swing.event.SwingPropertyChangeSupport;
 
 import com.bnrdo.databrowser.Pagination;
+import com.bnrdo.databrowser.exception.ModelException;
 
 import ca.odell.glazedlists.BasicEventList;
 import ca.odell.glazedlists.EventList;
@@ -17,6 +18,7 @@ import ca.odell.glazedlists.swing.GlazedListsSwing;
 @SuppressWarnings("unchecked")
 public class DataBrowserModel {
 
+	public static final String FN_DATA_TABLE_MODEL = "dataTableModel";
     public static final String FN_SEARCH_FILTER_LIST = "searchFilter";
     public static final String FN_PAGINATION = "pagination";
 
@@ -24,7 +26,7 @@ public class DataBrowserModel {
 
     private Pagination pagination;
     private EventList dataTableSource;
-    private TableFormat dataTableFormat;
+	private TableFormat dataTableFormat;
     private AdvancedTableModel dataTableModel;
 
     private SwingPropertyChangeSupport propChangeFirer;
@@ -51,13 +53,21 @@ public class DataBrowserModel {
     public AdvancedTableModel getDataTableModel() {
         return dataTableModel;
     }
-
+    
     public EventList getDataTableSource() {
         return dataTableSource;
     }
 
     public TableFormat getDataTableFormat() {
         return dataTableFormat;
+    }
+    
+    public void setDataTableFormat(TableFormat fmt){
+    	TableFormat oldVal = dataTableFormat;
+    	dataTableFormat = fmt;
+    	assembleTableModel(dataTableSource, fmt);
+    	propChangeFirer.firePropertyChange(FN_DATA_TABLE_MODEL, oldVal,
+    			fmt);
     }
 
     public List<String> getSearchFilters() {
@@ -72,12 +82,22 @@ public class DataBrowserModel {
     }
 
     public void setPagination(Pagination p) {
-        /*
-         * pagination.setCurrentPageNum(p.getCurrentPageNum()); //
-         * pagination.setMaxExposableNums(p.getMaxExposableNums());
-         * pagination.setPageNumsExposed(p.getPageNumsExposed());
-         */
-        Pagination oldVal = p;
+    	if(p.getTotalPagecount() < 1)
+    		throw new ModelException("Pagination total page count should not be lesser than 1.");
+    	
+    	if(p.getMaxExposableCount() < 1)
+    		throw new ModelException("Pagination max exposable count should not be lesser than 1.");
+    	
+    	if(p.getCurrentPageNum() < 1)
+    		throw new ModelException("Pagination current page number should not be lesser than 1");
+    
+    	if(p.getMaxExposableCount() > p.getTotalPagecount())
+    		throw new ModelException("Pagination max exposable count should be greater than or equal the total page count defined.");
+    	
+    	if(p.getCurrentPageNum() > p.getTotalPagecount())
+    		throw new ModelException("Pagination current page number should not be greater than the total page count.");
+    	
+        Pagination oldVal = pagination;
         pagination = p;
         propChangeFirer.firePropertyChange(FN_PAGINATION, oldVal, p);
     }

@@ -120,7 +120,8 @@ public class DataBrowserView {
         return retVal;
     }
 
-    private JPanel createSearchPanel() {
+    @SuppressWarnings("serial")
+	private JPanel createSearchPanel() {
         JPanel retVal = new JPanel() {
             @Override
             public Dimension getPreferredSize() {
@@ -200,7 +201,8 @@ public class DataBrowserView {
         return btnLast;
     }
 
-    class PageButton extends JButton {
+    @SuppressWarnings("serial")
+	class PageButton extends JButton {
         private boolean selected;
 
         public PageButton() {

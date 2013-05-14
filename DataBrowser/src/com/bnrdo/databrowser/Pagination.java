@@ -7,12 +7,10 @@ import javax.swing.event.SwingPropertyChangeSupport;
 
 import org.apache.commons.lang3.ArrayUtils;
 
+import com.bnrdo.databrowser.listener.PaginationListener;
+
 public class Pagination {
 
-    public static final String FN_CURRENT_PAGE_NUMBER = "currentPageNum";
-    public static final String FN_PAGE_NUMS_EXPOSED = "pageNumsExposed";
-    public static final String FN_TOTAL_PAGE_COUNT = "totalPageCount";
-    public static final String FN_MAX_EXPOSABLE_COUNT = "maxExposableCount";
 
     public static final String FIRST_PAGE = "firstPage";
     public static final String LAST_PAGE = "lastPage";
@@ -25,19 +23,19 @@ public class Pagination {
     private int totalPageCount;
     private int maxExposableCount;
 
-    private SwingPropertyChangeSupport propChangeFirer;
     private List<PaginationListener> paginationListeners;
 
     public Pagination() {
-        totalPageCount = 100;
-        maxExposableCount = 10;
-        currentPageNum = 0;
+        totalPageCount = 0;
+        maxExposableCount = 0;
+        currentPageNum = 1;
         pageNumsExposed = new int [] { 0 };
-        propChangeFirer = new SwingPropertyChangeSupport(this);
         paginationListeners = new ArrayList<PaginationListener>();
     }
 
     public void setTotalPageCount(int num) {
+    	totalPageCount = num;
+    	
         List<Integer> ints = new ArrayList<Integer>();
         for (int i = 1; i <= num; i++) {
             ints.add(i);
@@ -47,11 +45,16 @@ public class Pagination {
         setPageNumsExposed(ArrayUtils.subarray(pageNumsRaw, 0,
                 maxExposableCount));
     }
-
-    public void setMaxExposableCount(int num) {
-
+    public int getTotalPagecount(){
+    	return totalPageCount;
     }
-
+    public void setMaxExposableCount(int num) {
+    	maxExposableCount = num;
+    }
+    public int getMaxExposableCount(){
+    	return maxExposableCount;
+    }
+    
     public void addPaginationListener(PaginationListener p) {
         paginationListeners.add(p);
     }
@@ -61,8 +64,6 @@ public class Pagination {
     }
 
     public void setCurrentPageNum(int num) {
-        int oldVal = currentPageNum;
-
         if (isCenterable(num)) {
             centerCurrentPage(num);
         } else {
@@ -74,7 +75,6 @@ public class Pagination {
         }
 
         currentPageNum = num;
-        propChangeFirer.firePropertyChange(FN_CURRENT_PAGE_NUMBER, oldVal, num);
 
         for (PaginationListener p : paginationListeners) {
             p.pageChanged(num);
@@ -153,8 +153,6 @@ public class Pagination {
     public void setPageNumsExposed(int [] num) {
         int [] oldVal = pageNumsExposed;
         pageNumsExposed = num;
-        propChangeFirer.firePropertyChange(FN_PAGE_NUMS_EXPOSED, oldVal,
-                pageNumsExposed);
     }
 
     public int getFirstRawPageNum() {
@@ -164,21 +162,4 @@ public class Pagination {
     public int getLastRawPageNum() {
         return pageNumsRaw[pageNumsRaw.length - 1];
     }
-    // public int getFirstPageNum
-    /*
-     * public void setMaxExposableNums(int max) { int oldVal = maxExposableNums;
-     * maxExposableNums = max;
-     * propChangeFirer.firePropertyChange(MAX_EXPOSABLE_NUMS, oldVal, max);
-     * 
-     * int [] newNums = new int [max];
-     * 
-     * for (int i = 0; i < max; i++) { if (i > pageNumsExposed.length) break;
-     * 
-     * newNums[i] = pageNumsExposed[i]; }
-     * propChangeFirer.firePropertyChange(PAGE_NUMS_EXPOSED, pageNumsExposed,
-     * newNums); }
-     */
-    // public int getMaxExposableNums() {
-    // return maxExposableNums;
-    // }
 }
