@@ -16,6 +16,7 @@ import com.bnrdo.databrowser.exception.ModelException;
 
 import ca.odell.glazedlists.BasicEventList;
 import ca.odell.glazedlists.EventList;
+import ca.odell.glazedlists.FilterList;
 import ca.odell.glazedlists.SortedList;
 import ca.odell.glazedlists.gui.TableFormat;
 import ca.odell.glazedlists.migrationkit.swing.TextFilterList;
@@ -30,7 +31,6 @@ public class DataBrowserModel<E> {
     public static final String FN_PAGINATION = "pagination";
 
     private List<String> searchFilter;
-
     private Pagination pagination;
     private EventList<E> dataTableSource;
 	private TableFormat<E> dataTableFormat;
@@ -82,6 +82,11 @@ public class DataBrowserModel<E> {
     	dataTableSource = list;
     	assembleTableModel(dataTableSource, dataTableFormat);
     	propChangeFirer.firePropertyChange(FN_DATA_TABLE_MODEL, oldVal, list);
+    }
+    //overloaded version, for setting the datasource as filterable, no need to fire anything
+    public void setDataTableSource(FilterList<E> list){
+    	dataTableSource = list;
+    	assembleTableModel(dataTableSource, dataTableFormat);
     }
 
     public List<String> getSearchFilters() {

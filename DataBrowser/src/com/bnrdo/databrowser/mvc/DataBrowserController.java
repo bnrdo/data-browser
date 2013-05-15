@@ -1,11 +1,12 @@
 package com.bnrdo.databrowser.mvc;
 
-import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.beans.PropertyChangeEvent;
-import java.util.Comparator;
 import java.util.List;
+import java.util.Random;
 
 import javax.swing.JComboBox;
 import javax.swing.JTable;
@@ -14,9 +15,10 @@ import javax.swing.JTextField;
 import ca.odell.glazedlists.FilterList;
 import ca.odell.glazedlists.SortedList;
 import ca.odell.glazedlists.TextFilterator;
+import ca.odell.glazedlists.event.ListEvent;
+import ca.odell.glazedlists.event.ListEventListener;
 import ca.odell.glazedlists.gui.AbstractTableComparatorChooser;
 import ca.odell.glazedlists.gui.TableFormat;
-import ca.odell.glazedlists.migrationkit.swing.TextFilterList;
 import ca.odell.glazedlists.swing.TableComparatorChooser;
 import ca.odell.glazedlists.swing.TextComponentMatcherEditor;
 
@@ -31,20 +33,22 @@ import com.bnrdo.databrowser.mvc.DataBrowserView.PageButton;
 public class DataBrowserController<E> implements ModelListener {
 	private DataBrowserView view;
 	private DataBrowserModel<E> model;
+	public static int ctr;
 
 	public DataBrowserController(DataBrowserView v, DataBrowserModel<E> m) {
 		view = v;
 		model = m;
 		model.addModelListener(this);
+		ctr = 0;
 	}
 
 	public void control() {
-		assembleDataTable();
-		assembleFilterBy();
-		assembleFilterText();
+		setupDataTable();
+		setupFilterBy();
+		setupFilterText();
 	}
 
-	private void assembleDataTable() {
+	private void setupDataTable() {
 		JTable tblData = view.getDataTable(); 
 		tblData.setModel(model.getDataTableModel());
 		
@@ -54,7 +58,7 @@ public class DataBrowserController<E> implements ModelListener {
 				AbstractTableComparatorChooser.SINGLE_COLUMN);
 	}
 
-	private void assembleFilterBy() {
+	private void setupFilterBy() {
 		JComboBox cboFilter = view.getCboSearch();
 		TableFormat<E> tableForm = model.getDataTableFormat();
 		int colCount = tableForm.getColumnCount();
@@ -64,26 +68,40 @@ public class DataBrowserController<E> implements ModelListener {
 		for (int i = 0; i < colCount; i++) {
 			cboFilter.addItem(tableForm.getColumnName(i));
 		}
+		cboFilter.addItemListener(new ItemListener() {
+			public void itemStateChanged(ItemEvent e) {
+				setupFilterText();
+			}
+		});
 	}
 	
-	private void assembleFilterText(){
-		JTextField txtFilter = view.getTxtSearch();
+	private void setupFilterText(){
+		final JTextField txtFilter = view.getTxtSearch();
+		
 		FilterList<E> textFilteredSource = new FilterList<E>(model.getDataTableSource(), new TextComponentMatcherEditor<E>(txtFilter, new TextFilterator<E>() {
 			public void getFilterStrings(List baseList, E element) {
+				int i = view.getCboSearch().getSelectedIndex();
 				Person p = (Person) element;
-
-				baseList.add(p.getFirstName());
-				baseList.add(p.getLastName());
-				baseList.add(p.getBirthDay());
-				baseList.add(p.getAge());
-				baseList.add(p.getOccupation());
+				
+				if(i == 0)
+					baseList.add(p.getFirstName());
+				if(i == 1)
+					baseList.add(p.getLastName());
+				if(i == 2)
+					baseList.add(p.getBirthDay().toString());
+				if(i == 3)
+					baseList.add(p.getAge());
+				if(i == 4)
+					baseList.add(p.getOccupation());
 			}
 		}));
-		model.setDataTableSource(textFilteredSource);
-		
+		model.setDataTableSource(textFilteredSource);		
 	}
-
-	private void assemblePageEvents() {
+	public static int randomNum(){
+		Random r = new Random();
+		return r.nextInt(10);
+	}
+	private void setupPageEvents() {
 		if (view.getBtnFirst() == null
 				&& model.getPagination().getPageNumsExposed().length > 1) {
 			throw new ViewException(
@@ -137,7 +155,7 @@ public class DataBrowserController<E> implements ModelListener {
 
 	private void pageNumsExposedChanged(int[] newVal) {
 		view.refreshPageNumbers(newVal);
-		assemblePageEvents();
+		setupPageEvents();
 	}
 
 	private void currentPageNumChanged(int newVal) {

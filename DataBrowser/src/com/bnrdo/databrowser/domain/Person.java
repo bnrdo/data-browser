@@ -3,6 +3,8 @@ package com.bnrdo.databrowser.domain;
 import java.util.Date;
 import java.util.List;
 
+import com.bnrdo.databrowser.mvc.DataBrowserController;
+
 import ca.odell.glazedlists.TextFilterator;
 
 public class Person{
@@ -36,7 +38,7 @@ public class Person{
 		this.age = age;
 	}
 	public String getOccupation() {
-		return occupation;
+		return occupation + DataBrowserController.randomNum();
 	}
 	public void setOccupation(String occupation) {
 		this.occupation = occupation;
