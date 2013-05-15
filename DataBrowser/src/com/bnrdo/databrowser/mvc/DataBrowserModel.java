@@ -4,19 +4,26 @@ import java.beans.PropertyChangeListener;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.swing.JTextField;
 import javax.swing.event.SwingPropertyChangeSupport;
 
+import org.apache.commons.beanutils.BeanComparator;
+
 import com.bnrdo.databrowser.Pagination;
+import com.bnrdo.databrowser.comparator.SmartComparator;
+import com.bnrdo.databrowser.comparator.StringComparator;
 import com.bnrdo.databrowser.exception.ModelException;
 
 import ca.odell.glazedlists.BasicEventList;
 import ca.odell.glazedlists.EventList;
+import ca.odell.glazedlists.SortedList;
 import ca.odell.glazedlists.gui.TableFormat;
+import ca.odell.glazedlists.migrationkit.swing.TextFilterList;
 import ca.odell.glazedlists.swing.AdvancedTableModel;
 import ca.odell.glazedlists.swing.GlazedListsSwing;
 
 @SuppressWarnings("unchecked")
-public class DataBrowserModel {
+public class DataBrowserModel<E> {
 
 	public static final String FN_DATA_TABLE_MODEL = "dataTableModel";
     public static final String FN_SEARCH_FILTER_LIST = "searchFilter";
@@ -25,9 +32,9 @@ public class DataBrowserModel {
     private List<String> searchFilter;
 
     private Pagination pagination;
-    private EventList dataTableSource;
-	private TableFormat dataTableFormat;
-    private AdvancedTableModel dataTableModel;
+    private EventList<E> dataTableSource;
+	private TableFormat<E> dataTableFormat;
+    private AdvancedTableModel<E> dataTableModel;
 
     private SwingPropertyChangeSupport propChangeFirer;
 
@@ -36,7 +43,7 @@ public class DataBrowserModel {
 
         pagination = new Pagination();
 
-        dataTableSource = new BasicEventList();
+        dataTableSource = new BasicEventList<E>();
         dataTableFormat = new BasicTableFormat();
 
         searchFilter = Arrays.asList("Filter 1", "Filter 2", "Filter 3",
@@ -45,29 +52,36 @@ public class DataBrowserModel {
         assembleTableModel(dataTableSource, dataTableFormat);
     }
 
-    private void assembleTableModel(EventList source, TableFormat format) {
-        dataTableModel = GlazedListsSwing.eventTableModelWithThreadProxyList(
-                source, format);
+    private void assembleTableModel(EventList<E> source, TableFormat<E> format) {
+    	SortedList<E> sortedSource = new SortedList<E>(source, new SmartComparator<E>());
+    	dataTableSource = sortedSource;
+        dataTableModel = GlazedListsSwing.eventTableModelWithThreadProxyList(dataTableSource, format);
     }
-
-    public AdvancedTableModel getDataTableModel() {
+    
+    public AdvancedTableModel<E> getDataTableModel() {
         return dataTableModel;
     }
     
-    public EventList getDataTableSource() {
+    public EventList<E> getDataTableSource() {
         return dataTableSource;
     }
 
-    public TableFormat getDataTableFormat() {
+    public TableFormat<E> getDataTableFormat() {
         return dataTableFormat;
     }
     
-    public void setDataTableFormat(TableFormat fmt){
-    	TableFormat oldVal = dataTableFormat;
+    public void setDataTableFormat(TableFormat<E> fmt){
+    	TableFormat<E> oldVal = dataTableFormat;
     	dataTableFormat = fmt;
     	assembleTableModel(dataTableSource, fmt);
-    	propChangeFirer.firePropertyChange(FN_DATA_TABLE_MODEL, oldVal,
-    			fmt);
+    	propChangeFirer.firePropertyChange(FN_DATA_TABLE_MODEL, oldVal, fmt);
+    }
+    
+    public void setDataTableSource(EventList<E> list){
+    	EventList<E> oldVal = dataTableSource;
+    	dataTableSource = list;
+    	assembleTableModel(dataTableSource, dataTableFormat);
+    	propChangeFirer.firePropertyChange(FN_DATA_TABLE_MODEL, oldVal, list);
     }
 
     public List<String> getSearchFilters() {
@@ -110,7 +124,7 @@ public class DataBrowserModel {
         propChangeFirer.addPropertyChangeListener(prop);
     }
 
-    private class BasicTableFormat implements TableFormat {
+    private class BasicTableFormat implements TableFormat<E> {
         public int getColumnCount() {
             return 5;
         }

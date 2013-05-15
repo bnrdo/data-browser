@@ -10,17 +10,17 @@ import com.bnrdo.databrowser.mvc.DataBrowserModel;
 import com.bnrdo.databrowser.mvc.DataBrowserView;
 
 @SuppressWarnings("serial")
-public class DataBrowser extends JPanel {
+public class DataBrowser<E> extends JPanel {
 
-    private DataBrowserController controller;
-    private DataBrowserModel model;
+    private DataBrowserController<E> controller;
+    private DataBrowserModel<E> model;
     private DataBrowserView view;
 
     public DataBrowser() {
         view = new DataBrowserView();
-        model = new DataBrowserModel();
+        model = new DataBrowserModel<E>();
 
-        controller = new DataBrowserController(view, model);
+        controller = new DataBrowserController<E>(view, model);
         controller.control();
         setLayout(new BorderLayout());
         add(view.getUI(), BorderLayout.CENTER);
@@ -30,7 +30,7 @@ public class DataBrowser extends JPanel {
         model.setPagination(p);
     }
     
-    public DataBrowserModel getModel(){
+    public DataBrowserModel<E> getModel(){
     	return model;
     }
 }
