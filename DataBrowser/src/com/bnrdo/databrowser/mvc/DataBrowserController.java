@@ -80,18 +80,18 @@ public class DataBrowserController<E> implements ModelListener {
 		
 		FilterList<E> textFilteredSource = new FilterList<E>(model.getDataTableSource(), new TextComponentMatcherEditor<E>(txtFilter, new TextFilterator<E>() {
 			public void getFilterStrings(List baseList, E element) {
-				int i = view.getCboSearch().getSelectedIndex();
+				String searchCat = view.getCboSearch().getSelectedItem().toString();
 				Person p = (Person) element;
-				
-				if(i == 0)
+				//do something like propertyColumnMapping
+				if(searchCat.equals("First Name"))
 					baseList.add(p.getFirstName());
-				if(i == 1)
+				else if(searchCat.equals("Last Name"))
 					baseList.add(p.getLastName());
-				if(i == 2)
+				else if(searchCat.equals("Birth Day"))
 					baseList.add(p.getBirthDay().toString());
-				if(i == 3)
+				else if(searchCat.equals("Age"))
 					baseList.add(p.getAge());
-				if(i == 4)
+				else if(searchCat.equals("Occupation"))
 					baseList.add(p.getOccupation());
 			}
 		}));

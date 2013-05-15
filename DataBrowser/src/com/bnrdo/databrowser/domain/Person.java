@@ -38,7 +38,7 @@ public class Person{
 		this.age = age;
 	}
 	public String getOccupation() {
-		return occupation + DataBrowserController.randomNum();
+		return occupation;
 	}
 	public void setOccupation(String occupation) {
 		this.occupation = occupation;
