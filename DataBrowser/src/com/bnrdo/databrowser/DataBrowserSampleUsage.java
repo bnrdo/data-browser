@@ -13,6 +13,8 @@ import javax.swing.UIManager;
 
 import com.bnrdo.databrowser.DataBrowser;
 import com.bnrdo.databrowser.domain.Person;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 
 @SuppressWarnings("unchecked")
 public class DataBrowserSampleUsage {
@@ -40,18 +42,23 @@ public class DataBrowserSampleUsage {
 	private DataBrowser<Person> createDataBrowser() {
 		final DataBrowser<Person> dbrowse = new DataBrowser<Person>();
 		final List<Person> source =  populateSource();
-		final Map<Integer, String> colNameIndexMap = new HashMap<Integer, String>();
+		final Multimap<Integer, Object> colNameIndexMap = ArrayListMultimap.create();
 		
 		colNameIndexMap.put(0, "First Name");
+		colNameIndexMap.put(0, "firstName");
 		colNameIndexMap.put(1, "Last Name");
+		colNameIndexMap.put(1, "lastName");
 		colNameIndexMap.put(2, "Birthday");
+		colNameIndexMap.put(2, "birthDay");
 		colNameIndexMap.put(3, "Age");
+		colNameIndexMap.put(3, "age");
 		colNameIndexMap.put(4, "Occupation");
+		colNameIndexMap.put(4, "occupation");
 		
-		dbrowse.setColNameIndexMap(colNameIndexMap);
+		dbrowse.setColInfoMap(colNameIndexMap);
 		dbrowse.setDataTableSource(source);
 		dbrowse.create();
-		//nahinto ako sa multimap, colinfomap un index-colname-propnamefrompojo
+
 		return dbrowse;
 	}
 	

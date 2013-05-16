@@ -10,6 +10,7 @@ import com.bnrdo.databrowser.exception.ModelException;
 import com.bnrdo.databrowser.mvc.DataBrowserController;
 import com.bnrdo.databrowser.mvc.DataBrowserModel;
 import com.bnrdo.databrowser.mvc.DataBrowserView;
+import com.google.common.collect.Multimap;
 
 @SuppressWarnings("serial")
 public class DataBrowser<E> extends JPanel {
@@ -31,8 +32,8 @@ public class DataBrowser<E> extends JPanel {
     	model.setDataTableSource(source);
     }
     
-    public void setColNameIndexMap(Map<Integer, String> map){
-    	//model.setColNameIndexMap(map);
+    public void setColInfoMap(Multimap<Integer, Object> map){
+    	model.setColInfoMap(map);
     }
     
     public void create(){

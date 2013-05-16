@@ -2,11 +2,7 @@ package com.bnrdo.databrowser.mvc;
 
 import java.beans.PropertyChangeListener;
 import java.util.List;
-import java.util.Map;
-
 import javax.swing.event.SwingPropertyChangeSupport;
-import javax.swing.table.TableModel;
-
 import com.bnrdo.databrowser.Pagination;
 import com.google.common.collect.Multimap;
 
