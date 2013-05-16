@@ -24,7 +24,6 @@ public class DataBrowser<E> extends JPanel {
         controller = new DataBrowserController<E>(view, model);
         setLayout(new BorderLayout());
         add(view.getUI(), BorderLayout.CENTER);
-        System.out.println("heheh");
     }
 
     public void setPagination(Pagination p) {    	
