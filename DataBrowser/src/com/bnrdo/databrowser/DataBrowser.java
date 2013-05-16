@@ -2,6 +2,7 @@ package com.bnrdo.databrowser;
 
 import java.awt.BorderLayout;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.JPanel;
 
@@ -26,16 +27,15 @@ public class DataBrowser<E> extends JPanel {
         add(view.getUI(), BorderLayout.CENTER);
     }
 
-    public void setPagination(Pagination p) {    	
-        model.setPagination(p);
+    public void setDataTableSource(List<E> source){
+    	model.setDataTableSource(source);
     }
     
-    public void initDataSource(List<E> source){
-    	controller.initDataSource(source);
+    public void setColNameIndexMap(Map<Integer, String> map){
+    	//model.setColNameIndexMap(map);
     }
     
     public void create(){
-        
     	controller.control();
     }
     

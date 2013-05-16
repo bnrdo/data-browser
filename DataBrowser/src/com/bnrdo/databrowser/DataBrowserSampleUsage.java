@@ -2,22 +2,17 @@ package com.bnrdo.databrowser;
 
 import java.awt.BorderLayout;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
-import ca.odell.glazedlists.EventList;
-import ca.odell.glazedlists.gui.TableFormat;
-
 import com.bnrdo.databrowser.DataBrowser;
-import com.bnrdo.databrowser.Pagination;
 import com.bnrdo.databrowser.domain.Person;
-import com.bnrdo.databrowser.listener.PaginationListener;
-import com.bnrdo.databrowser.mvc.DataBrowserModel;
 
 @SuppressWarnings("unchecked")
 public class DataBrowserSampleUsage {
@@ -45,16 +40,24 @@ public class DataBrowserSampleUsage {
 	private DataBrowser<Person> createDataBrowser() {
 		final DataBrowser<Person> dbrowse = new DataBrowser<Person>();
 		final List<Person> source =  populateSource();
+		final Map<Integer, String> colNameIndexMap = new HashMap<Integer, String>();
 		
-		dbrowse.initDataSource(source);
+		colNameIndexMap.put(0, "First Name");
+		colNameIndexMap.put(1, "Last Name");
+		colNameIndexMap.put(2, "Birthday");
+		colNameIndexMap.put(3, "Age");
+		colNameIndexMap.put(4, "Occupation");
+		
+		dbrowse.setColNameIndexMap(colNameIndexMap);
+		dbrowse.setDataTableSource(source);
 		dbrowse.create();
-		
+		//nahinto ako sa multimap, colinfomap un index-colname-propnamefrompojo
 		return dbrowse;
 	}
 	
 	private List<Person> populateSource(){
 		List<Person> retVal = new ArrayList<Person>();
-		for (int i = 0; i < 14695; i++) {
+		for (int i = 0; i < 33; i++) {
 			Person p = new Person();
 			p.setFirstName("First Name" + i);
 			p.setLastName("Last Name" + i);
@@ -66,4 +69,3 @@ public class DataBrowserSampleUsage {
 		return retVal;
 	}
 }
-

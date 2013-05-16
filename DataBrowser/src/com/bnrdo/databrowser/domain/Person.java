@@ -1,11 +1,6 @@
 package com.bnrdo.databrowser.domain;
 
 import java.util.Date;
-import java.util.List;
-
-import com.bnrdo.databrowser.mvc.DataBrowserController;
-
-import ca.odell.glazedlists.TextFilterator;
 
 public class Person{
 	private String firstName;
@@ -19,7 +14,7 @@ public class Person{
 	public void setFirstName(String firstName) {
 		this.firstName = firstName;
 	}
-	public String getLastName() {
+	public String getLastName(){
 		return lastName;
 	}
 	public void setLastName(String lastName) {

@@ -26,7 +26,7 @@ public class DataBrowserTest {
 		p.setTotalPageCount(10);
 		p.setCurrentPageNum(11);
 		try {
-			dbrowse.setPagination(p);
+			//dbrowse.setPagination(p);
 			fail("No exception thrown at first test");
 		} catch (ModelException e) {
 			assertTrue(e instanceof ModelException);
@@ -36,7 +36,7 @@ public class DataBrowserTest {
 		p.setTotalPageCount(10);
 		p.setCurrentPageNum(0);
 		try {
-			dbrowse.setPagination(p);
+			//dbrowse.setPagination(p);
 			fail("No exception thrown at second test");
 		} catch (ModelException e) {
 			assertTrue(e instanceof ModelException);

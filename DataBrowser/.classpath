@@ -4,10 +4,9 @@
 	<classpathentry kind="src" path="test"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/J2SE-1.5"/>
 	<classpathentry kind="lib" path="C:/Users/ut1p98/Desktop/personal_dev/JAR Repository/commons-lang/3.1/commons-lang3-3.1.jar"/>
-	<classpathentry kind="lib" path="C:/Users/ut1p98/Desktop/personal_dev/JAR Repository/glazedlists/glazedlists_java15.jar"/>
 	<classpathentry kind="lib" path="C:/Users/ut1p98/Desktop/personal_dev/JAR Repository/junit/4.11/junit-4.11.jar"/>
 	<classpathentry kind="lib" path="C:/Users/ut1p98/Desktop/personal_dev/JAR Repository/hamcrest-core/1.3/hamcrest-core-1.3.jar"/>
 	<classpathentry kind="lib" path="C:/Users/ut1p98/Desktop/personal_dev/JAR Repository/commons-beanutils/1.8.3/commons-beanutils-1.8.3.jar"/>
-	<classpathentry kind="lib" path="//fsisap0220/ISAP Personal Documents$/ut1p98/My Documents/glazedlist/glazedlists-1.9.0-tutorial/lib/issuezilla.jar"/>
+	<classpathentry kind="lib" path="C:/Users/ut1p98/Desktop/personal_dev/JAR Repository/guava/14.0.1/guava-14.0.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
