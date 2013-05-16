@@ -11,7 +11,6 @@ import org.apache.commons.beanutils.BeanComparator;
 
 import com.bnrdo.databrowser.Pagination;
 import com.bnrdo.databrowser.comparator.SmartComparator;
-import com.bnrdo.databrowser.comparator.StringComparator;
 import com.bnrdo.databrowser.exception.ModelException;
 
 import ca.odell.glazedlists.BasicEventList;
