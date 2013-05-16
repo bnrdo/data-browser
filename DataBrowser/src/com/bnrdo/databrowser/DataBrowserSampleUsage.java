@@ -44,39 +44,17 @@ public class DataBrowserSampleUsage {
 	
 	private DataBrowser<Person> createDataBrowser() {
 		final DataBrowser<Person> dbrowse = new DataBrowser<Person>();
-		final DataBrowserModel<Person> dmodel = dbrowse.getModel();
-		final EventList<Person> tableDataSource =  dmodel.getDataTableSource();
-		final List<Person> source = populateSource();
+		final List<Person> source =  populateSource();
 		
-		final int rowCount = source.size();
-		final int maxExposable = 10;
-		final int itemsPerPage = 10;
-		
-		Pagination p = new Pagination();
-		p.setMaxExposableCount(maxExposable);
-		p.setTotalPageCount(rowCount / itemsPerPage);
-		p.addPaginationListener(new PaginationListener() {
-			public void pageChanged(int pageNum) {
-				List<Person> sourceCopy = new ArrayList<Person>(source);
-				int from = (pageNum * itemsPerPage) - itemsPerPage;
-				int to = (pageNum * itemsPerPage);
-				List<Person> pagedSrc = sourceCopy.subList(from, to);
-				
-				tableDataSource.clear();
-				tableDataSource.addAll(pagedSrc);
-			}
-		});
-		
-		p.setCurrentPageNum(1);
-		dmodel.setDataTableFormat(new PersonTableFormat());
-		dbrowse.setPagination(p);
+		dbrowse.initDataSource(source);
+		dbrowse.create();
 		
 		return dbrowse;
 	}
 	
 	private List<Person> populateSource(){
 		List<Person> retVal = new ArrayList<Person>();
-		for (int i = 0; i < 141200; i++) {
+		for (int i = 0; i < 14695; i++) {
 			Person p = new Person();
 			p.setFirstName("First Name" + i);
 			p.setLastName("Last Name" + i);
@@ -87,32 +65,5 @@ public class DataBrowserSampleUsage {
 		}
 		return retVal;
 	}
-
-	class PersonTableFormat implements TableFormat<Person>{
-
-		public int getColumnCount() {
-			return 5;
-		}
-
-		public String getColumnName(int index) {
-			String[] colNames = new String[]{"First Name", "Last Name", "Birth Day", "Age", "Occupation"};
-			return colNames[index];
-		}
-
-		public Object getColumnValue(Person p, int index) {
-			if(index == 0)
-				return p.getFirstName();
-			else if(index == 1)
-				return p.getLastName();
-			else if(index == 2)
-				return p.getBirthDay().toString();
-			else if(index == 3)
-				return Integer.toString(p.getAge());
-			else if(index == 4)
-				return p.getOccupation();
-			else
-				return "This should not happen";
-		}
-		
-	}
 }
+

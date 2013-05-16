@@ -1,6 +1,7 @@
 package com.bnrdo.databrowser;
 
 import java.awt.BorderLayout;
+import java.util.List;
 
 import javax.swing.JPanel;
 
@@ -21,13 +22,21 @@ public class DataBrowser<E> extends JPanel {
         model = new DataBrowserModel<E>();
 
         controller = new DataBrowserController<E>(view, model);
-        controller.control();
         setLayout(new BorderLayout());
         add(view.getUI(), BorderLayout.CENTER);
     }
 
     public void setPagination(Pagination p) {    	
         model.setPagination(p);
+    }
+    
+    public void initDataSource(List<E> source){
+    	controller.initDataSource(source);
+    }
+    
+    public void create(){
+        
+    	controller.control();
     }
     
     public DataBrowserModel<E> getModel(){

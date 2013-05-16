@@ -4,7 +4,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -12,6 +15,7 @@ import javax.swing.JComboBox;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 
+import ca.odell.glazedlists.EventList;
 import ca.odell.glazedlists.FilterList;
 import ca.odell.glazedlists.SortedList;
 import ca.odell.glazedlists.TextFilterator;
@@ -48,14 +52,45 @@ public class DataBrowserController<E> implements ModelListener {
 		setupFilterText();
 	}
 
+	public void initDataSource(List<E> source){
+		final List<E> mainSource = source;
+		final int maxExposable = 10;
+		final int rowCount = mainSource.size();
+		final int itemsPerPage = 52;
+		
+		final EventList<E> tableDataSource = model.getDataTableSource();
+		
+		Pagination p = new Pagination();
+		p.setMaxExposableCount(maxExposable);
+		p.setTotalPageCount(rowCount / itemsPerPage);
+		p.addPaginationListener(new PaginationListener() {
+			public void pageChanged(int pageNum) {
+				List<E> sourceCopy = new ArrayList<E>(mainSource);
+				int from = (pageNum * itemsPerPage) - itemsPerPage;
+				int to = (pageNum * itemsPerPage);
+				List<E> pagedSrc = sourceCopy.subList(from, to);
+				
+				tableDataSource.clear();
+				tableDataSource.addAll(pagedSrc);
+			}
+		});
+		
+		p.setCurrentPageNum(1);
+		model.setDataTableFormat((TableFormat<E>) new PersonTableFormat());
+		model.setPagination(p);
+	}
+	
 	private void setupDataTable() {
-		JTable tblData = view.getDataTable(); 
+		JTable tblData = view.getDataTable();
+		
 		tblData.setModel(model.getDataTableModel());
 		
 		TableComparatorChooser.install(
 				tblData,
 				(SortedList<E>) model.getDataTableSource(),
 				AbstractTableComparatorChooser.SINGLE_COLUMN);
+				
+		
 	}
 
 	private void setupFilterBy() {
@@ -70,6 +105,8 @@ public class DataBrowserController<E> implements ModelListener {
 		}
 		cboFilter.addItemListener(new ItemListener() {
 			public void itemStateChanged(ItemEvent e) {
+				//when the item of cbo is setup the filter text again to make it filter
+				//based on the column specified by the cbo
 				setupFilterText();
 			}
 		});
@@ -200,4 +237,33 @@ public class DataBrowserController<E> implements ModelListener {
 			control();
 		}
 	}
+}
+
+
+class PersonTableFormat implements TableFormat<Person>{
+
+	public int getColumnCount() {
+		return 5;
+	}
+
+	public String getColumnName(int index) {
+		String[] colNames = new String[]{"First Name", "Last Name", "Birth Day", "Age", "Occupation"};
+		return colNames[index];
+	}
+
+	public Object getColumnValue(Person p, int index) {
+		if(index == 0)
+			return p.getFirstName();
+		else if(index == 1)
+			return p.getLastName();
+		else if(index == 2)
+			return p.getBirthDay().toString();
+		else if(index == 3)
+			return Integer.toString(p.getAge());
+		else if(index == 4)
+			return p.getOccupation();
+		else
+			return "This should not happen";
+	}
+	
 }
