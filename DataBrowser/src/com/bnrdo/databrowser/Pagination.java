@@ -11,155 +11,158 @@ import com.bnrdo.databrowser.listener.PaginationListener;
 
 public class Pagination {
 
+	public static final String FIRST_PAGE = "firstPage";
+	public static final String LAST_PAGE = "lastPage";
+	public static final String PREV_PAGE = "prevPage";
+	public static final String NEXT_PAGE = "nextPage";
 
-    public static final String FIRST_PAGE = "firstPage";
-    public static final String LAST_PAGE = "lastPage";
-    public static final String PREV_PAGE = "prevPage";
-    public static final String NEXT_PAGE = "nextPage";
+	private int currentPageNum;
+	private int[] pageNumsRaw;
+	private int[] pageNumsExposed;
+	private int totalPageCount;
+	private int maxExposableCount;
 
-    private int currentPageNum;
-    private int [] pageNumsRaw;
-    private int [] pageNumsExposed;
-    private int totalPageCount;
-    private int maxExposableCount;
+	private List<PaginationListener> paginationListeners;
 
-    private List<PaginationListener> paginationListeners;
+	public Pagination() {
+		totalPageCount = 0;
+		maxExposableCount = 0;
+		currentPageNum = 1;
+		pageNumsExposed = new int[] { 0 };
+		pageNumsRaw = new int[] { 0 };
+		paginationListeners = new ArrayList<PaginationListener>();
+	}
 
-    public Pagination() {
-        totalPageCount = 0;
-        maxExposableCount = 0;
-        currentPageNum = 1;
-        pageNumsExposed = new int [] { 0 };
-        paginationListeners = new ArrayList<PaginationListener>();
-    }
+	public void setTotalPageCount(int num) {
+		totalPageCount = num;
 
-    public void setTotalPageCount(int num) {
-    	totalPageCount = num;
-    	
-        List<Integer> ints = new ArrayList<Integer>();
-        for (int i = 1; i <= num; i++) {
-            ints.add(i);
-        }
-        pageNumsRaw = ArrayUtils.toPrimitive(ints.toArray(new Integer [ints
-                .size()]));
-        setPageNumsExposed(ArrayUtils.subarray(pageNumsRaw, 0,
-                maxExposableCount));
-    }
-    public int getTotalPagecount(){
-    	return totalPageCount;
-    }
-    public void setMaxExposableCount(int num) {
-    	maxExposableCount = num;
-    }
-    public int getMaxExposableCount(){
-    	return maxExposableCount;
-    }
-    
-    public void addPaginationListener(PaginationListener p) {
-        paginationListeners.add(p);
-    }
+		List<Integer> ints = new ArrayList<Integer>();
+		for (int i = 1; i <= num; i++) {
+			ints.add(i);
+		}
+		pageNumsRaw = ArrayUtils.toPrimitive(ints.toArray(new Integer[ints
+				.size()]));
+		setPageNumsExposed(ArrayUtils.subarray(pageNumsRaw, 0,
+				maxExposableCount));
+	}
 
-    public int getCurrentPageNum() {
-        return currentPageNum;
-    }
+	public int getTotalPagecount() {
+		return totalPageCount;
+	}
 
-    public void setCurrentPageNum(int num) {
-        if (isCenterable(num)) {
-            centerCurrentPage(num);
-        } else {
-            int centerPosition = (pageNumsExposed.length / 2) + 1;
-            if (num < centerPosition)
-                scrollToFirst();
-            else
-                scrollToLast();
-        }
+	public void setMaxExposableCount(int num) {
+		maxExposableCount = num;
+	}
 
-        currentPageNum = num;
+	public int getMaxExposableCount() {
+		return maxExposableCount;
+	}
 
-        for (PaginationListener p : paginationListeners) {
-            p.pageChanged(num);
-        }
-    }
+	public void addPaginationListener(PaginationListener p) {
+		paginationListeners.add(p);
+	}
 
-    private boolean isCenterable(int num) {
-        int exposeLen = pageNumsExposed.length;
-        int centerPosition = (exposeLen / 2) + 1;
-        if (num >= centerPosition
-                && num <= (getLastRawPageNum() - (exposeLen - centerPosition)))
-            return true;
-        return false;
-    }
+	public int getCurrentPageNum() {
+		return currentPageNum;
+	}
 
-    private void centerCurrentPage(int toCenter) {
-        int toCenterOrigCopy = toCenter;
-        int exposeLen = pageNumsExposed.length;
-        int centerPosition = (exposeLen / 2) + 1;
-        int [] newNums = new int [exposeLen];
+	public void setCurrentPageNum(int num) {
+		if (isCenterable(num)) {
+			centerCurrentPage(num);
+		} else {
+			int centerPosition = (pageNumsExposed.length / 2) + 1;
+			if (num < centerPosition)
+				scrollToFirst();
+			else
+				scrollToLast();
+		}
 
-        // right
-        for (int a = centerPosition - 2; a >= 0; a--) {
-            newNums[a] = --toCenter;
-        }
+		currentPageNum = num;
 
-        // left
-        for (int b = centerPosition - 1; b < exposeLen; b++) {
-            newNums[b] = toCenterOrigCopy++;
-        }
+		for (PaginationListener p : paginationListeners) {
+			p.pageChanged(num);
+		}
+	}
 
-        setPageNumsExposed(newNums);
+	private boolean isCenterable(int num) {
+		int exposeLen = pageNumsExposed.length;
+		int centerPosition = (exposeLen / 2) + 1;
+		if (num >= centerPosition
+				&& num <= (getLastRawPageNum() - (exposeLen - centerPosition)))
+			return true;
+		return false;
+	}
 
-        /*
-         * nahinto ako sa pagcecenter ng pagination ...
-         * 
-         * what i want is totally detached pagination, behavior, gusto ko mag
-         * reregister nalang ng listener then ung manner ng kung anong data i
-         * didisplay based dun sa page na currently e slected, delegated un sa
-         * client ng pagination ok
-         */
-    }
+	private void centerCurrentPage(int toCenter) {
+		int toCenterOrigCopy = toCenter;
+		int exposeLen = pageNumsExposed.length;
+		int centerPosition = (exposeLen / 2) + 1;
+		int[] newNums = new int[exposeLen];
 
-    public void setCurrentPageNum(String where) {
-        int num = 0;
+		// right
+		for (int a = centerPosition - 2; a >= 0; a--) {
+			newNums[a] = --toCenter;
+		}
 
-        if (where.equals(NEXT_PAGE)) {
-            num = currentPageNum + 1;
-        } else if (where.equals(PREV_PAGE)) {
-            num = currentPageNum - 1;
-        } else if (where.equals(FIRST_PAGE)) {
-            num = pageNumsRaw[0];
-            scrollToFirst();
-        } else if (where.equals(LAST_PAGE)) {
-            num = pageNumsRaw[pageNumsRaw.length - 1];
-            scrollToLast();
-        }
+		// left
+		for (int b = centerPosition - 1; b < exposeLen; b++) {
+			newNums[b] = toCenterOrigCopy++;
+		}
 
-        setCurrentPageNum(num);
-    }
+		setPageNumsExposed(newNums);
 
-    private void scrollToFirst() {
-        setPageNumsExposed(ArrayUtils.subarray(pageNumsRaw, 0,
-                maxExposableCount));
-    }
+		/*
+		 * nahinto ako sa pagcecenter ng pagination ...
+		 * 
+		 * what i want is totally detached pagination, behavior, gusto ko mag
+		 * reregister nalang ng listener then ung manner ng kung anong data i
+		 * didisplay based dun sa page na currently e slected, delegated un sa
+		 * client ng pagination ok
+		 */
+	}
 
-    private void scrollToLast() {
-        setPageNumsExposed(ArrayUtils.subarray(pageNumsRaw, totalPageCount
-                - maxExposableCount, totalPageCount));
-    }
+	public void setCurrentPageNum(String where) {
+		int num = 0;
 
-    public int [] getPageNumsExposed() {
-        return pageNumsExposed;
-    }
+		if (where.equals(NEXT_PAGE)) {
+			num = currentPageNum + 1;
+		} else if (where.equals(PREV_PAGE)) {
+			num = currentPageNum - 1;
+		} else if (where.equals(FIRST_PAGE)) {
+			num = pageNumsRaw[0];
+			scrollToFirst();
+		} else if (where.equals(LAST_PAGE)) {
+			num = pageNumsRaw[pageNumsRaw.length - 1];
+			scrollToLast();
+		}
 
-    public void setPageNumsExposed(int [] num) {
-        int [] oldVal = pageNumsExposed;
-        pageNumsExposed = num;
-    }
+		setCurrentPageNum(num);
+	}
 
-    public int getFirstRawPageNum() {
-        return pageNumsRaw[0];
-    }
+	private void scrollToFirst() {
+		setPageNumsExposed(ArrayUtils.subarray(pageNumsRaw, 0,
+				maxExposableCount));
+	}
 
-    public int getLastRawPageNum() {
-        return pageNumsRaw[pageNumsRaw.length - 1];
-    }
+	private void scrollToLast() {
+		setPageNumsExposed(ArrayUtils.subarray(pageNumsRaw, totalPageCount
+				- maxExposableCount, totalPageCount));
+	}
+
+	public int[] getPageNumsExposed() {
+		return pageNumsExposed;
+	}
+
+	public void setPageNumsExposed(int[] num) {
+		int[] oldVal = pageNumsExposed;
+		pageNumsExposed = num;
+	}
+
+	public int getFirstRawPageNum() {
+		return pageNumsRaw[0];
+	}
+
+	public int getLastRawPageNum() {
+		return pageNumsRaw[pageNumsRaw.length - 1];
+	}
 }

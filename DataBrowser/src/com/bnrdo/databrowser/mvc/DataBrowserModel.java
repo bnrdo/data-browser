@@ -17,7 +17,7 @@ public class DataBrowserModel<E> {
 
     private Pagination pagination;
     private List<E> dataTableSource;
-    private TableDataSourceFormat tableDataSourceFormat;
+    private TableDataSourceFormat<E> tableDataSourceFormat;
     private Multimap<Integer, Object> colInfoMap;
 
     private SwingPropertyChangeSupport propChangeFirer;
@@ -73,6 +73,10 @@ public class DataBrowserModel<E> {
 	
 	public List<E> getDataTableSource(){
 		return dataTableSource;
+	}
+	
+	public Pagination getPagination(){
+		return pagination;
 	}
 	
 	public void addModelListener(PropertyChangeListener prop) {
