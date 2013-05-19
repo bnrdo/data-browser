@@ -55,4 +55,15 @@ public class DataBrowserUtil {
 		
 		return retVal;
 	}
+	
+	public static <E> Object[] extractRowFromFormat(TableDataSourceFormat<E> fmt, E e){
+		int colCount= fmt.getColumnCount();
+		Object[] retVal= new Object[colCount];
+		
+		for(int i = 0; i < colCount; i++){
+			retVal[i] = fmt.getValueAt(i, e);
+		}
+		
+		return retVal;
+	}
 }

@@ -18,6 +18,10 @@ public class DataBrowser<E> extends JPanel {
     private DataBrowserController<E> controller;
     private DataBrowserModel<E> model;
     private DataBrowserView view;
+    
+    private List<E> source;
+    private TableDataSourceFormat sourceFormat;
+    private Multimap<Integer, Object> colInfoMap;
 
     public DataBrowser() {
         view = new DataBrowserView();
@@ -28,18 +32,30 @@ public class DataBrowser<E> extends JPanel {
         add(view.getUI(), BorderLayout.CENTER);
     }
 
-    public void setDataTableSource(List<E> source){
-    	model.setDataTableSource(source);
+    public void setDataTableSource(List<E> src){
+    	model.setDataTableSource(src);
+    }
+    
+    public void setTableDataSourceFormat(TableDataSourceFormat fmt){
+    	model.setTableDataSourceFormat(fmt);
     }
     
     public void setColInfoMap(Multimap<Integer, Object> map){
     	model.setColInfoMap(map);
     }
     
-    public void create(){
-    	controller.control();
+    private void validateInput(){
+    	if(colInfoMap == null)
+    		throw new ModelException("Column info map should not be null");
+    	else if(sourceFormat == null)
+    		throw new ModelException("Format for the data source should not be null");
+    	else if(source == null)
+    		throw new ModelException("Data source should not be null");
+    	
     }
-    
+    public javax.swing.JButton getTestButton(){
+    	return view.getTestButton();
+    }
     public DataBrowserModel<E> getModel(){
     	return model;
     }

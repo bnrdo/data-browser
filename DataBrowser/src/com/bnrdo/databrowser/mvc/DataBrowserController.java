@@ -6,11 +6,11 @@ import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 
 import com.bnrdo.databrowser.DataBrowserUtil;
-import com.bnrdo.databrowser.domain.Person;
+import com.bnrdo.databrowser.Pagination;
+import com.bnrdo.databrowser.TableDataSourceFormat;
 import com.bnrdo.databrowser.listener.ModelListener;
 import com.google.common.collect.Multimap;
 
-@SuppressWarnings("unchecked")
 public class DataBrowserController<E> implements ModelListener {
 	private DataBrowserView view;
 	private DataBrowserModel<E> model;
@@ -22,27 +22,28 @@ public class DataBrowserController<E> implements ModelListener {
 		model.addModelListener(this);
 	}
 
-	public void control(){
-		setUpTable();
-	}
-
 	private void setUpTable(){
 		JTable tblData = view.getDataTable();
 		Multimap<Integer, Object> map = model.getColInfoMap();
 		
 		Object[] colNames = DataBrowserUtil.extractColNamesFromMap(map);
 		DefaultTableModel tableModel = new DefaultTableModel(null, colNames);
+		TableDataSourceFormat<E> fmt = model.getTableDataSourceFormat();
 		
 		for(E domain : model.getDataTableSource()){
-			TableSourceFormat fmt =new TableSourceFormat((Person) domain);
-			tableModel.addRow(new Object[]{fmt.getValueAt(0),
-											fmt.getValueAt(1),
-											fmt.getValueAt(2),
-											fmt.getValueAt(3),
-											fmt.getValueAt(4)});
+			tableModel.addRow(DataBrowserUtil.extractRowFromFormat(fmt, domain));
 		}
 		
 		tblData.setModel(tableModel);
+		setUpPagination();
+	}
+	
+	private void setUpPagination(){
+		Pagination p = new Pagination();
+		p.setCurrentPageNum(Pagination.FIRST_PAGE);
+		p.setMaxExposableCount(10);
+		p.setTotalPageCount(model.getDataTableSource().size());
+		model.setPagination(p);
 	}
 	
 	//if data in model changes reflect it to the UI
@@ -52,31 +53,12 @@ public class DataBrowserController<E> implements ModelListener {
 		
 		if (DataBrowserModel.FN_PAGINATION.equalsIgnoreCase(propName)) {
 			
-		}else if (DataBrowserModel.FN_DATA_TABLE_SOURCE.equalsIgnoreCase(propName)) {
+		}else if (DataBrowserModel.FN_DATA_TABLE_SOURCE.equalsIgnoreCase(propName) ||
+				DataBrowserModel.FN_DATA_TABLE_SOURCE_FORMAT.equalsIgnoreCase(propName) ||
+				DataBrowserModel.FN_COL_INFO_MAP.equalsIgnoreCase(propName)) {
+			//if one of the three fired a property change, re-setup the table
+			
 			setUpTable();
 		}
-	}
-}
-
-class TableSourceFormat{
-	private Person p;
-	public TableSourceFormat(Person p){
-		this.p = p;
-	}
-	public String getValueAt(int index){
-		
-		if(index == 0){
-			return p.getFirstName();
-		}else if(index == 1){
-			return p.getLastName();
-		}else if(index == 2){
-			return p.getBirthDay().toString();
-		}else if(index == 3){
-			return Integer.toString(p.getAge());
-		}else if(index == 4){
-			return p.getOccupation();
-		}
-		
-		throw new IllegalStateException();
 	}
 }

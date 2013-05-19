@@ -25,7 +25,9 @@ public class DataBrowserView {
 
     private JTextField txtSearch;
     private JComboBox cboSearch;
-    private JTable tblData;;
+    private JTable tblData;
+    
+    private JButton testButton;
 
     private PageButton [] pageBtns;
     private PageButton btnFirst;
@@ -52,8 +54,19 @@ public class DataBrowserView {
 
         pnlMain.add(pnlTable, BorderLayout.CENTER);
         pnlMain.add(pnlSearchAndPageHolder, BorderLayout.PAGE_START);
+        pnlMain.add(createTestButton(), BorderLayout.PAGE_END);
     }
 
+    private JPanel createTestButton(){
+    	JPanel retVal = new JPanel(new BorderLayout());
+    	testButton = new JButton("Test Common");
+    	retVal.add(testButton, BorderLayout.CENTER);
+    	return retVal;
+    }
+    public JButton getTestButton(){
+    	return testButton;
+    }
+    
     @SuppressWarnings("serial")
     private JPanel createTablePanel() {
         JPanel retVal = new JPanel(new BorderLayout()) {
