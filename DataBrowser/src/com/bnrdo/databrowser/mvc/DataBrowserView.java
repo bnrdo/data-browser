@@ -12,6 +12,7 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -81,56 +82,57 @@ public class DataBrowserView {
         retVal.add(pane);
         return retVal;
     }
-
-    @SuppressWarnings("serial")
-    private JPanel createPagePanel() {
-        JPanel retVal = new JPanel(new BorderLayout()) {
+    
+    private JPanel createPagePanel(){
+    	return new JPanel(new BorderLayout()) {
             @Override
             public Dimension getPreferredSize() {
-                return new Dimension(250, 30);
+                return new Dimension(250, 20);
             }
         };
-
-        return retVal;
     }
-
-    public JPanel createPageButtons(int [] numsExposed) {
-        JPanel retVal = new JPanel();
-        retVal.setLayout(new BoxLayout(retVal, BoxLayout.LINE_AXIS));
-
-        retVal.add(Box.createHorizontalGlue());
-
-        if (numsExposed.length > 1) {
+    
+    @SuppressWarnings("serial")
+    public void createPageButtons(int[] pageNums) {
+    	if (pnlPage.getComponentCount() > 0) {
+    		pnlPage.remove(0);
+    	}
+    	
+    	JPanel pageHandle = new JPanel();
+    	pageHandle.setLayout(new BoxLayout(pageHandle, BoxLayout.LINE_AXIS));
+    	pageHandle.add(Box.createHorizontalGlue());
+    	
+    	if (pageNums.length > 1) {
             btnFirst = new PageButton("First");
             btnPrev = new PageButton("Prev");
             btnFirst.setFocusable(false);
             btnPrev.setFocusable(false);
             btnFirst.setVisible(false);
             btnPrev.setVisible(false);
-            retVal.add(btnFirst);
-            retVal.add(btnPrev);
+            pageHandle.add(btnFirst);
+            pageHandle.add(btnPrev);
         }
 
-        pageBtns = new PageButton [numsExposed.length];
+        pageBtns = new PageButton [pageNums.length];
         int indxCtr = 1;
-        for (int i : numsExposed) {
+        for (int i : pageNums) {
             PageButton btn = new PageButton(i);
             btn.setFocusable(false);
             pageBtns[indxCtr - 1] = btn;
             indxCtr++;
-            retVal.add(btn);
+            pageHandle.add(btn);
         }
 
-        if (numsExposed.length > 1) {
+        if (pageNums.length > 1) {
             btnNext = new PageButton("Next");
             btnLast = new PageButton("Last");
             btnNext.setFocusable(false);
             btnLast.setFocusable(false);
-            retVal.add(btnNext);
-            retVal.add(btnLast);
+            pageHandle.add(btnNext);
+            pageHandle.add(btnLast);
         }
-
-        return retVal;
+    	
+    	pnlPage.add(pageHandle);
     }
 
     @SuppressWarnings("serial")
@@ -168,16 +170,7 @@ public class DataBrowserView {
 
         return retVal;
     }
-
-    public void refreshPageNumbers(int [] numsExposed) {
-        if (pnlPage.getComponentCount() > 0) {
-            pnlPage.remove(0);
-        }
-        pnlPage.add(createPageButtons(numsExposed));
-        pnlPage.revalidate();
-        pnlPage.repaint();
-    }
-
+    
     public JTextField getTxtSearch() {
         return txtSearch;
     }

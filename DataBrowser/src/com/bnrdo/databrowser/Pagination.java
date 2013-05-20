@@ -29,7 +29,7 @@ public class Pagination {
 		maxExposableCount = 0;
 		currentPageNum = 1;
 		pageNumsExposed = new int[] { 0 };
-		pageNumsRaw = new int[] { 0 };
+		pageNumsRaw = new int[] { 1 };
 		paginationListeners = new ArrayList<PaginationListener>();
 	}
 
@@ -60,6 +60,14 @@ public class Pagination {
 
 	public void addPaginationListener(PaginationListener p) {
 		paginationListeners.add(p);
+	}
+	
+	public void removePaginationListener(int index){
+		paginationListeners.remove(index);
+	}
+	
+	public void clearPaginationListeners(){
+		paginationListeners.clear();
 	}
 
 	public int getCurrentPageNum() {
@@ -110,15 +118,6 @@ public class Pagination {
 		}
 
 		setPageNumsExposed(newNums);
-
-		/*
-		 * nahinto ako sa pagcecenter ng pagination ...
-		 * 
-		 * what i want is totally detached pagination, behavior, gusto ko mag
-		 * reregister nalang ng listener then ung manner ng kung anong data i
-		 * didisplay based dun sa page na currently e slected, delegated un sa
-		 * client ng pagination ok
-		 */
 	}
 
 	public void setCurrentPageNum(String where) {
@@ -154,7 +153,6 @@ public class Pagination {
 	}
 
 	public void setPageNumsExposed(int[] num) {
-		int[] oldVal = pageNumsExposed;
 		pageNumsExposed = num;
 	}
 
