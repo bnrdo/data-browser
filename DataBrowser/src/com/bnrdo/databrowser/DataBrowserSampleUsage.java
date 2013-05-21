@@ -59,8 +59,6 @@ public class DataBrowserSampleUsage {
 		dbrowse.setColInfoMap(colNameIndexMap);
 		dbrowse.setTableDataSourceFormat(new PersonFormat());
 		dbrowse.setDataTableSource(source);
-		dbrowse.setNumOfPagesExposed(5);
-		dbrowse.setItemsPerPage(10);
 		dbrowse.create();
 		
 		dbrowse.getTestButton().addActionListener(new ActionListener() {
@@ -68,7 +66,6 @@ public class DataBrowserSampleUsage {
 				Random r = new Random();
 				int num = r.nextInt(100);
 				dbrowse.setDataTableSource(populateSourceFromRandomNum(num+10), null);
-				dbrowse.create();
 			}
 		});
 		

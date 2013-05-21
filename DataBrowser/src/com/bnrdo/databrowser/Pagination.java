@@ -7,7 +7,6 @@ import javax.swing.event.SwingPropertyChangeSupport;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import com.bnrdo.databrowser.exception.ModelException;
 import com.bnrdo.databrowser.listener.PaginationListener;
 
 public class Pagination {
@@ -16,14 +15,12 @@ public class Pagination {
 	public static final String LAST_PAGE = "lastPage";
 	public static final String PREV_PAGE = "prevPage";
 	public static final String NEXT_PAGE = "nextPage";
-	public static final String ITEMS_PER_PAGE = "itemsPerPage";
 
 	private int currentPageNum;
 	private int[] pageNumsRaw;
 	private int[] pageNumsExposed;
 	private int totalPageCount;
 	private int maxExposableCount;
-	private int itemsPerPage;
 
 	private List<PaginationListener> paginationListeners;
 
@@ -43,8 +40,10 @@ public class Pagination {
 		for (int i = 1; i <= num; i++) {
 			ints.add(i);
 		}
-		pageNumsRaw = ArrayUtils.toPrimitive(ints.toArray(new Integer[ints.size()]));
-		setPageNumsExposed(ArrayUtils.subarray(pageNumsRaw, 0, maxExposableCount));
+		pageNumsRaw = ArrayUtils.toPrimitive(ints.toArray(new Integer[ints
+				.size()]));
+		setPageNumsExposed(ArrayUtils.subarray(pageNumsRaw, 0,
+				maxExposableCount));
 	}
 
 	public int getTotalPagecount() {
@@ -63,14 +62,6 @@ public class Pagination {
 		paginationListeners.add(p);
 	}
 	
-	public int getItemsPerPage() {
-		return itemsPerPage;
-	}
-
-	public void setItemsPerPage(int num) {
-		itemsPerPage = num;
-	}
-
 	public void removePaginationListener(int index){
 		paginationListeners.remove(index);
 	}
@@ -83,7 +74,7 @@ public class Pagination {
 		return currentPageNum;
 	}
 
-	public void setCurrentPageNum(Integer num) {
+	public void setCurrentPageNum(int num) {
 		if (isCenterable(num)) {
 			centerCurrentPage(num);
 		} else {
@@ -142,8 +133,6 @@ public class Pagination {
 		} else if (where.equals(LAST_PAGE)) {
 			num = pageNumsRaw[pageNumsRaw.length - 1];
 			scrollToLast();
-		} else{
-			throw new ModelException("Invalid page number.");
 		}
 
 		setCurrentPageNum(num);
