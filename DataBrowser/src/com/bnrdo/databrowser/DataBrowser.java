@@ -22,12 +22,20 @@ public class DataBrowser<E> extends JPanel {
     private List<E> source;
     private TableDataSourceFormat<E> sourceFormat;
     private Multimap<Integer, Object> colInfoMap;
+    
+    //pagination settings
+    private int numOfPagesExposed;
+    private int itemsPerPage;
 
     public DataBrowser() {
         view = new DataBrowserView();
         model = new DataBrowserModel<E>();
 
         controller = new DataBrowserController<E>(view, model);
+        
+        numOfPagesExposed = 10;
+        itemsPerPage = 10;
+        
         setLayout(new BorderLayout());
         add(view.getUI(), BorderLayout.CENTER);
     }
@@ -43,8 +51,17 @@ public class DataBrowser<E> extends JPanel {
     public void setTableDataSourceFormat(TableDataSourceFormat<E> fmt){
     	sourceFormat = fmt;
     }
+    
 
-    public void setColInfoMap(Multimap<Integer, Object> map){
+    public void setItemsPerPage(int num) {
+		itemsPerPage = num;
+	}
+
+	public void setNumOfPagesExposed(int num) {
+		numOfPagesExposed = num;
+	}
+
+	public void setColInfoMap(Multimap<Integer, Object> map){
     	colInfoMap = map;
     }
     
@@ -53,10 +70,13 @@ public class DataBrowser<E> extends JPanel {
     	model.setColInfoMap(colInfoMap);
     	model.setTableDataSourceFormat(sourceFormat);
     	model.setDataTableSource(source);
-    }
-    public void setPageNumsReveal(int num){
-    	//eto ung page nums exposed na galing sa client. ideally nsa controller dapat to then set pagination 
-    	//based sa mga setting na ito na syang mag fifire ng mga bagay bagay from model.
+    	
+    	Pagination p = new Pagination();
+    	p.setCurrentPageNum(Pagination.FIRST_PAGE);
+    	p.setMaxExposableCount(numOfPagesExposed);
+    	p.setItemsPerPage(itemsPerPage);
+    	
+    	model.setPagination(p);
     }
     private void validateInput(){
     	if(colInfoMap == null)
