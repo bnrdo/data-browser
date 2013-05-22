@@ -1,7 +1,9 @@
 package com.bnrdo.databrowser;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.event.SwingPropertyChangeSupport;
 
@@ -17,6 +19,7 @@ public class Pagination {
 	public static final String PREV_PAGE = "prevPage";
 	public static final String NEXT_PAGE = "nextPage";
 	public static final String ITEMS_PER_PAGE = "itemsPerPage";
+	public static final String PAGINATE_CONTENT_ID = "paginateContentId";
 
 	private int currentPageNum;
 	private int[] pageNumsRaw;
@@ -25,7 +28,7 @@ public class Pagination {
 	private int maxExposableCount;
 	private int itemsPerPage;
 
-	private List<PaginationListener> paginationListeners;
+	private Map<String, PaginationListener> paginationListeners;
 
 	public Pagination() {
 		totalPageCount = 0;
@@ -33,7 +36,7 @@ public class Pagination {
 		currentPageNum = 1;
 		pageNumsExposed = new int[] { 0 };
 		pageNumsRaw = new int[] { 1 };
-		paginationListeners = new ArrayList<PaginationListener>();
+		paginationListeners = new HashMap<String, PaginationListener>();
 	}
 
 	public void setTotalPageCount(int num) {
@@ -59,8 +62,8 @@ public class Pagination {
 		return maxExposableCount;
 	}
 
-	public void addPaginationListener(PaginationListener p) {
-		paginationListeners.add(p);
+	public void addPaginationListener(String id, PaginationListener p) {
+		paginationListeners.put(id, p);
 	}
 	
 	public int getItemsPerPage() {
@@ -77,6 +80,10 @@ public class Pagination {
 	
 	public void clearPaginationListeners(){
 		paginationListeners.clear();
+	}
+	
+	public void removePaginationListener(String id){
+		paginationListeners.remove(id);
 	}
 
 	public int getCurrentPageNum() {
@@ -95,9 +102,9 @@ public class Pagination {
 		}
 
 		currentPageNum = num;
-
-		for (PaginationListener p : paginationListeners) {
-			p.pageChanged(num);
+		
+		for(String s : paginationListeners.keySet()){
+			paginationListeners.get(s).pageChanged(num);
 		}
 	}
 

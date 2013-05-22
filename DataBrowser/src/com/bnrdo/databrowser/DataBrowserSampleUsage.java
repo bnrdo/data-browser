@@ -9,8 +9,12 @@ import java.util.List;
 import java.util.Random;
 
 import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JTable;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableModel;
 
 import com.bnrdo.databrowser.DataBrowser;
 import com.bnrdo.databrowser.domain.Person;
@@ -42,7 +46,7 @@ public class DataBrowserSampleUsage {
 	
 	private DataBrowser<Person> createDataBrowser() {
 		final DataBrowser<Person> dbrowse = new DataBrowser<Person>();
-		final List<Person> source =  populateSource();
+		final List<Person> source =  generateRandomSource();
 		final Multimap<Integer, Object> colNameIndexMap = ArrayListMultimap.create();
 		
 		colNameIndexMap.put(0, "First Name");
@@ -65,31 +69,19 @@ public class DataBrowserSampleUsage {
 		
 		dbrowse.getTestButton().addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				Random r = new Random();
-				int num = r.nextInt(100);
-				dbrowse.setDataTableSource(populateSourceFromRandomNum(num+10), null);
+				dbrowse.setDataTableSource(generateRandomSource());
 				dbrowse.create();
 			}
 		});
 		
 		return dbrowse;
 	}
-	public List<Person> populateSourceFromRandomNum(int num){
+	public List<Person> generateRandomSource(){
+		Random r = new Random();
+		int num = r.nextInt(1000);
+		System.out.println("Generating " + num + " rows...");
 		List<Person> retVal = new ArrayList<Person>();
-		for (int i = 0; i < num; i++) {
-			Person p = new Person();
-			p.setFirstName("First Name" + i);
-			p.setLastName("Last Name" + i);
-			p.setBirthDay(new Date());
-			p.setOccupation("Occupation" + i);
-			p.setAge(i);
-			retVal.add(p);
-		}
-		return retVal;
-	}
-	public List<Person> populateSource(){
-		List<Person> retVal = new ArrayList<Person>();
-		for (int i = 0; i < 33; i++) {
+		for (int i = 1; i <= num; i++) {
 			Person p = new Person();
 			p.setFirstName("First Name" + i);
 			p.setLastName("Last Name" + i);
@@ -101,3 +93,5 @@ public class DataBrowserSampleUsage {
 		return retVal;
 	}
 }
+
+

@@ -44,10 +44,6 @@ public class DataBrowser<E> extends JPanel {
     	source = src;
     }
     
-    public void setDataTableSource(List<E> src, String s){
-    	model.setDataTableSource(src);
-    }
-    
     public void setTableDataSourceFormat(TableDataSourceFormat<E> fmt){
     	sourceFormat = fmt;
     }
@@ -66,6 +62,7 @@ public class DataBrowser<E> extends JPanel {
     }
     
     public void create(){
+    	/*
     	validateInput();
     	model.setColInfoMap(colInfoMap);
     	model.setTableDataSourceFormat(sourceFormat);
@@ -76,6 +73,17 @@ public class DataBrowser<E> extends JPanel {
     	p.setMaxExposableCount(numOfPagesExposed);
     	p.setItemsPerPage(itemsPerPage);
     	
+    	model.setPagination(p);*/
+    	validateInput();
+    	
+    	model.setColInfoMap(colInfoMap);
+    	model.setTableDataSourceFormat(sourceFormat);
+    	model.setDataTableSource(source);
+    	
+    	Pagination p = new Pagination();
+    	p.setCurrentPageNum(Pagination.FIRST_PAGE);
+    	p.setMaxExposableCount(numOfPagesExposed);
+    	p.setItemsPerPage(itemsPerPage);
     	model.setPagination(p);
     }
     private void validateInput(){

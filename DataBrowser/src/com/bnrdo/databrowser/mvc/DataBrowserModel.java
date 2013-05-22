@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Random;
 
 import javax.swing.event.SwingPropertyChangeSupport;
+
+import com.bnrdo.databrowser.DataBrowserUtil;
 import com.bnrdo.databrowser.Pagination;
 import com.bnrdo.databrowser.TableDataSourceFormat;
 import com.bnrdo.databrowser.exception.ModelException;
@@ -13,7 +15,7 @@ import com.google.common.collect.Multimap;
 @SuppressWarnings("unchecked")
 public class DataBrowserModel<E> {
 
-    public static final String FN_DATA_TABLE_SOURCE_EXPOSED = "dataTableSource";
+    public static final String FN_DATA_TABLE_SOURCE_EXPOSED = "dataTableSourceExposed";
     public static final String FN_DATA_TABLE_SOURCE = "dataTableSource";
     public static final String FN_DATA_TABLE_SOURCE_FORMAT = "tableDataSourceFormat";
     public static final String FN_COL_INFO_MAP = "colInfoMap";
@@ -29,11 +31,10 @@ public class DataBrowserModel<E> {
 
     public DataBrowserModel() {
         propChangeFirer = new SwingPropertyChangeSupport(this);
-        pagination = new Pagination();
     }
 
 	public void setPagination(Pagination p) {
-		if(dataTableSource == null || tableDataSourceFormat == null || colInfoMap == null){
+		/*if(dataTableSource == null || tableDataSourceFormat == null || colInfoMap == null){
 			throw new ModelException("You should completely setup the table's data source before setting it's pagination.");
 		}
 		
@@ -42,13 +43,24 @@ public class DataBrowserModel<E> {
 		int pageCountForEvenSize = (srcSize / itemsPerPage);
 		
 		p.setTotalPageCount((srcSize % itemsPerPage) == 0 ? pageCountForEvenSize : pageCountForEvenSize + 1);
+		*/
 		
 		Pagination oldVal = pagination;
 		pagination = p;
-    	propChangeFirer.firePropertyChange(FN_PAGINATION, oldVal, p);
+		pagination.setTotalPageCount(DataBrowserUtil.getPageCount(dataTableSource.size(), p.getItemsPerPage()));
+    	propChangeFirer.firePropertyChange(FN_PAGINATION, oldVal, pagination);
+    	
+		//pagination = p;
 	}
 	
 	public void setDataTableSource(List<E> list){
+		/*if(colInfoMap == null || tableDataSourceFormat == null || pagination == null){
+			dataTableSource = list;
+		}else{
+			List<E> oldVal = dataTableSource;
+			dataTableSource = list;
+			propChangeFirer.firePropertyChange(FN_DATA_TABLE_SOURCE, oldVal, list);
+		}*/
 		dataTableSource = list;
 	}
 	

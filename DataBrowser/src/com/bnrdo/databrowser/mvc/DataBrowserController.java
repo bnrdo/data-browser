@@ -8,6 +8,8 @@ import java.util.List;
 
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
 
 import com.bnrdo.databrowser.DataBrowserUtil;
 import com.bnrdo.databrowser.Pagination;
@@ -30,22 +32,23 @@ public class DataBrowserController<E> implements ModelListener {
 		model.addModelListener(this);
 	}
 
-	private void setUpTable() {
-		JTable tblData = view.getDataTable();
-		Multimap<Integer, Object> map = model.getColInfoMap();
-
-		Object[] colNames = DataBrowserUtil.extractColNamesFromMap(map);
+	private void renderDataInTableInView(JTable tbl, Multimap<Integer, Object> colInfo, 
+							TableDataSourceFormat<E> fmt, List<E> source) {
+		
+		Object[] colNames = DataBrowserUtil.extractColNamesFromMap(colInfo);
 		DefaultTableModel tableModel = new DefaultTableModel(null, colNames);
-		TableDataSourceFormat<E> fmt = model.getTableDataSourceFormat();
 
 		for (E domain : model.getDataTableSourceExposed()) {
 			tableModel.addRow(DataBrowserUtil.extractRowFromFormat(fmt, domain));
 		}
 
-		tblData.setModel(tableModel);
+		tbl.setModel(tableModel);
+		
+		TableRowSorter<TableModel> sorter = new TableRowSorter<TableModel>(tableModel);
+	    tbl.setRowSorter(sorter);
 	}
 
-	private void setUpPaginationUI(int[] pages) {
+	private void renderPageNumbersInView(int[] pages) {
 
 		view.createPageButtons(pages);
 
@@ -85,7 +88,7 @@ public class DataBrowserController<E> implements ModelListener {
 	}
 
 	private void pageButtonIsClicked(Object where){
-		final Pagination p = model.getPagination();
+		Pagination p = model.getPagination();
 		
 		if(where instanceof Integer){
 			p.setCurrentPageNum((Integer)where);
@@ -95,7 +98,8 @@ public class DataBrowserController<E> implements ModelListener {
 			throw new ModelException("Invalid page click destination.");
 		}
 		
-		setUpPaginationUI(p.getPageNumsExposed());
+		//render the new page set in view
+		renderPageNumbersInView(p.getPageNumsExposed());
 		changeCurrentPageNum(p.getCurrentPageNum());
 	}
 	
@@ -114,43 +118,49 @@ public class DataBrowserController<E> implements ModelListener {
 		view.getBtnLast().setVisible(!(newVal == lastPageNum));
 	}
 	
-	private void setUpPagination(){
-		model.getPagination().addPaginationListener(new PaginationListener() {
-			@Override public void pageChanged(int pageNum) {
-				List<E> sourceCopy = new ArrayList<E>(model.getDataTableSource());
-				
-				int itemCount = sourceCopy.size();
-				int itemsPerPage = model.getPagination().getItemsPerPage();
-				int lastItem = pageNum * itemsPerPage;
-				int from = lastItem - itemsPerPage;
-				int to = (lastItem > (itemCount)) ? itemCount : lastItem;
-				
-				List<E> pagedSrc = sourceCopy.subList(from, to);
-				
-				model.setDataTableSourceExposed(pagedSrc);
-				
-				sourceCopy = null;
-				pagedSrc = null;
-			}
-		});
-	}
 
-	// if data in model changes reflect it to the UI
+	private List<E> getPaginatedSource(Pagination p, List<E> source){
+		List<E> retVal = new ArrayList<E>();
+		List<E> sourceCopy = new ArrayList<E>(source);
+		
+		int itemsPerPage = p.getItemsPerPage();
+		
+		int itemCount = sourceCopy.size();
+		int lastItem = p.getCurrentPageNum() * itemsPerPage;
+		int from = lastItem - itemsPerPage;
+		int to = (lastItem > (itemCount)) ? itemCount : lastItem;
+		
+		retVal = sourceCopy.subList(from, to);
+		
+		return retVal;
+	}
+	
+	//if data in model changes reflect it to the UI
 	public void propertyChange(PropertyChangeEvent evt){
 		String propName = evt.getPropertyName();
-		Object newVal = evt.getNewValue();
+		//Object newVal = evt.getNewValue();
 
-		if (DataBrowserModel.FN_PAGINATION.equalsIgnoreCase(propName)) {
-			System.out.println("pagination changed");
-			setUpPaginationUI(model.getPagination().getPageNumsExposed());
-			setUpPagination();
+		if (DataBrowserModel.FN_DATA_TABLE_SOURCE_EXPOSED.equalsIgnoreCase(propName)) {
+			renderDataInTableInView(view.getDataTable(), model.getColInfoMap(), 
+							model.getTableDataSourceFormat(), model.getDataTableSource());
+		} /*else if(DataBrowserModel.FN_DATA_TABLE_SOURCE.equalsIgnoreCase(propName)){
+			
+		}*/ else if(DataBrowserModel.FN_PAGINATION.equalsIgnoreCase(propName)){
+			Pagination p = model.getPagination();
+			p.removePaginationListener(Pagination.PAGINATE_CONTENT_ID);
+			p.addPaginationListener(Pagination.PAGINATE_CONTENT_ID, new PaginationListener() {
+				@Override public void pageChanged(int pageNum) {
+					model.setDataTableSourceExposed(getPaginatedSource(model.getPagination(), model.getDataTableSource()));
+				}
+			});
+			
+			renderPageNumbersInView(p.getPageNumsExposed());
+			
 			view.getPageBtns()[0].doClick();
-		} else if (DataBrowserModel.FN_DATA_TABLE_SOURCE_EXPOSED.equalsIgnoreCase(propName)
-				|| DataBrowserModel.FN_DATA_TABLE_SOURCE_FORMAT.equalsIgnoreCase(propName)
-				|| DataBrowserModel.FN_COL_INFO_MAP.equalsIgnoreCase(propName)) {
-			// if one of the three fired a property change, re-setup the table
-			System.out.println("data source changed");
-			setUpTable();
 		}
+		
+		//the following fragments should also be put in place ok.
+		//|| DataBrowserModel.FN_DATA_TABLE_SOURCE_FORMAT.equalsIgnoreCase(propName)
+		//|| DataBrowserModel.FN_COL_INFO_MAP.equalsIgnoreCase(propName)
 	}
 }

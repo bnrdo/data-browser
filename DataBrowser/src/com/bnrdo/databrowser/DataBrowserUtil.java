@@ -66,4 +66,13 @@ public class DataBrowserUtil {
 		
 		return retVal;
 	}
+	
+	public static int getPageCount(int itemCount, int itemsPerpage){
+		int retVal = 0;
+		int srcSize = itemCount;
+		int itemsPerPage = itemsPerpage;
+		int pageCountForEvenSize = (srcSize / itemsPerPage);
+		retVal = ((srcSize % itemsPerPage) == 0 ? pageCountForEvenSize : pageCountForEvenSize + 1);
+		return retVal;
+	}
 }
