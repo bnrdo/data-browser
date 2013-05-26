@@ -10,7 +10,6 @@ import com.bnrdo.databrowser.exception.ModelException;
 import com.bnrdo.databrowser.mvc.DataBrowserController;
 import com.bnrdo.databrowser.mvc.DataBrowserModel;
 import com.bnrdo.databrowser.mvc.DataBrowserView;
-import com.google.common.collect.Multimap;
 
 @SuppressWarnings("serial")
 public class DataBrowser<E> extends JPanel {
@@ -21,7 +20,7 @@ public class DataBrowser<E> extends JPanel {
     
     private List<E> source;
     private TableDataSourceFormat<E> sourceFormat;
-    private Multimap<Integer, Object> colInfoMap;
+    private ColumnInfoMap colInfoMap;
     
     //pagination settings
     private int numOfPagesExposed;
@@ -57,7 +56,7 @@ public class DataBrowser<E> extends JPanel {
 		numOfPagesExposed = num;
 	}
 
-	public void setColInfoMap(Multimap<Integer, Object> map){
+	public void setColInfoMap(ColumnInfoMap map){
     	colInfoMap = map;
     }
     
@@ -76,15 +75,16 @@ public class DataBrowser<E> extends JPanel {
     	model.setPagination(p);*/
     	validateInput();
     	
-    	model.setColInfoMap(colInfoMap);
-    	model.setTableDataSourceFormat(sourceFormat);
-    	model.setDataTableSource(source);
-    	
     	Pagination p = new Pagination();
     	p.setCurrentPageNum(Pagination.FIRST_PAGE);
     	p.setMaxExposableCount(numOfPagesExposed);
     	p.setItemsPerPage(itemsPerPage);
     	model.setPagination(p);
+    	
+    	model.setColInfoMap(colInfoMap);
+    	model.setTableDataSourceFormat(sourceFormat);
+    	model.setDataTableSource(source);
+    	
     }
     private void validateInput(){
     	if(colInfoMap == null)

@@ -6,11 +6,11 @@ import java.util.Random;
 
 import javax.swing.event.SwingPropertyChangeSupport;
 
+import com.bnrdo.databrowser.ColumnInfoMap;
 import com.bnrdo.databrowser.DataBrowserUtil;
 import com.bnrdo.databrowser.Pagination;
 import com.bnrdo.databrowser.TableDataSourceFormat;
 import com.bnrdo.databrowser.exception.ModelException;
-import com.google.common.collect.Multimap;
 
 @SuppressWarnings("unchecked")
 public class DataBrowserModel<E> {
@@ -20,17 +20,23 @@ public class DataBrowserModel<E> {
     public static final String FN_DATA_TABLE_SOURCE_FORMAT = "tableDataSourceFormat";
     public static final String FN_COL_INFO_MAP = "colInfoMap";
     public static final String FN_PAGINATION = "pagination";
+    
+    public static final int SORT_ASC = 0;
+    public static final int SORT_DESC = 1;
 
     private Pagination pagination;
     private List<E> dataTableSource;
     private List<E> dataTableSourceExposed;
     private TableDataSourceFormat<E> tableDataSourceFormat;
-    private Multimap<Integer, Object> colInfoMap;
+    private ColumnInfoMap colInfoMap;
 
     private SwingPropertyChangeSupport propChangeFirer;
+    
+    private int sortOrder;
 
     public DataBrowserModel() {
         propChangeFirer = new SwingPropertyChangeSupport(this);
+        sortOrder = SORT_ASC;
     }
 
 	public void setPagination(Pagination p) {
@@ -45,12 +51,12 @@ public class DataBrowserModel<E> {
 		p.setTotalPageCount((srcSize % itemsPerPage) == 0 ? pageCountForEvenSize : pageCountForEvenSize + 1);
 		*/
 		
-		Pagination oldVal = pagination;
+		/*Pagination oldVal = pagination;
 		pagination = p;
 		pagination.setTotalPageCount(DataBrowserUtil.getPageCount(dataTableSource.size(), p.getItemsPerPage()));
     	propChangeFirer.firePropertyChange(FN_PAGINATION, oldVal, pagination);
-    	
-		//pagination = p;
+    	*/
+		pagination = p;
 	}
 	
 	public void setDataTableSource(List<E> list){
@@ -61,7 +67,13 @@ public class DataBrowserModel<E> {
 			dataTableSource = list;
 			propChangeFirer.firePropertyChange(FN_DATA_TABLE_SOURCE, oldVal, list);
 		}*/
-		dataTableSource = list;
+		if(colInfoMap == null || tableDataSourceFormat == null || pagination == null){
+			dataTableSource = list;
+		}else{
+			List<E> oldVal = dataTableSource;
+			dataTableSource = list;
+			propChangeFirer.firePropertyChange(FN_DATA_TABLE_SOURCE, oldVal, list);
+		}
 	}
 	
 	public void setDataTableSourceExposed(List<E> list) {
@@ -74,11 +86,11 @@ public class DataBrowserModel<E> {
 		return dataTableSourceExposed;
 	}
 	
-	public void setColInfoMap(Multimap<Integer, Object> map){
+	public void setColInfoMap(ColumnInfoMap map){
 		if(dataTableSource == null || tableDataSourceFormat == null){
 			colInfoMap = map;
 		}else{
-			Multimap<Integer, Object> oldVal = colInfoMap;
+			ColumnInfoMap oldVal = colInfoMap;
 			colInfoMap = map;
 			propChangeFirer.firePropertyChange(FN_COL_INFO_MAP, oldVal, map);
 		}
@@ -94,7 +106,7 @@ public class DataBrowserModel<E> {
 		}		
 	}
 	
-	public Multimap<Integer, Object> getColInfoMap(){
+	public ColumnInfoMap getColInfoMap(){
 		return colInfoMap;
 	}
 	
@@ -110,6 +122,14 @@ public class DataBrowserModel<E> {
 		return pagination;
 	}
 	
+	public int getSortOrder() {
+		return sortOrder;
+	}
+
+	public void setSortOrder(int sortOrder) {
+		this.sortOrder = sortOrder;
+	}
+
 	public void addModelListener(PropertyChangeListener prop) {
         propChangeFirer.addPropertyChangeListener(prop);
     }

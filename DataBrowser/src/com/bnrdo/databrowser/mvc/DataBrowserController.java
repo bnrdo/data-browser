@@ -2,15 +2,28 @@ package com.bnrdo.databrowser.mvc;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.beans.PropertyChangeEvent;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 
+import org.apache.commons.beanutils.BeanComparator;
+import org.apache.commons.collections.comparators.ComparableComparator;
+import org.apache.commons.collections.comparators.ReverseComparator;
+
+import com.bnrdo.databrowser.ColumnInfoMap;
 import com.bnrdo.databrowser.DataBrowserUtil;
 import com.bnrdo.databrowser.Pagination;
 import com.bnrdo.databrowser.TableDataSourceFormat;
@@ -18,7 +31,6 @@ import com.bnrdo.databrowser.exception.ModelException;
 import com.bnrdo.databrowser.listener.ModelListener;
 import com.bnrdo.databrowser.listener.PaginationListener;
 import com.bnrdo.databrowser.mvc.DataBrowserView.PageButton;
-import com.google.common.collect.Multimap;
 
 public class DataBrowserController<E> implements ModelListener {
 	
@@ -31,11 +43,13 @@ public class DataBrowserController<E> implements ModelListener {
 		
 		model.addModelListener(this);
 	}
-
-	private void renderDataInTableInView(JTable tbl, Multimap<Integer, Object> colInfo, 
-							TableDataSourceFormat<E> fmt, List<E> source) {
+	
+	
+	private void renderDataInTableInView(final JTable tbl, 
+										final ColumnInfoMap colInfo, 
+										final TableDataSourceFormat<E> fmt, List<E> source) {
 		
-		Object[] colNames = DataBrowserUtil.extractColNamesFromMap(colInfo);
+		Object[] colNames = colInfo.getColumnNames();
 		DefaultTableModel tableModel = new DefaultTableModel(null, colNames);
 
 		for (E domain : model.getDataTableSourceExposed()) {
@@ -44,8 +58,35 @@ public class DataBrowserController<E> implements ModelListener {
 
 		tbl.setModel(tableModel);
 		
-		TableRowSorter<TableModel> sorter = new TableRowSorter<TableModel>(tableModel);
-	    tbl.setRowSorter(sorter);
+		JTableHeader header = tbl.getTableHeader();
+		header.setReorderingAllowed(false);
+		
+		if(header.getMouseListeners().length <= 2){
+			header.addMouseListener(new MouseAdapter() {
+				@SuppressWarnings({"unchecked", "rawtypes"})
+				@Override public void mouseReleased(MouseEvent evt){
+					int selIndex = tbl.convertColumnIndexToModel(tbl.columnAtPoint(evt.getPoint()));
+				
+		        	if (!(selIndex < 0)) {
+		        		List<E> copy = new ArrayList<E>(model.getDataTableSource());
+		        		ColumnInfoMap map = model.getColInfoMap();
+		        		String propNameToSort = map.getPropertyName(selIndex);
+		        		Comparator comparatorToUse = DataBrowserUtil.getComparator(map.getPropertyClass(selIndex));
+		        		BeanComparator beanComp = new BeanComparator(propNameToSort, comparatorToUse);
+		        		
+		        		if(model.getSortOrder() == DataBrowserModel.SORT_ASC){
+		        			Collections.sort(copy, new ReverseComparator(beanComp));
+		        			model.setSortOrder(DataBrowserModel.SORT_DESC);
+		        		}else{
+			        		Collections.sort(copy, beanComp);
+		        			model.setSortOrder(DataBrowserModel.SORT_ASC);
+		        		}
+		        	    
+		        	    model.setDataTableSource(copy);
+		        	}
+				}
+			});
+		}
 	}
 
 	private void renderPageNumbersInView(int[] pages) {
@@ -143,10 +184,12 @@ public class DataBrowserController<E> implements ModelListener {
 		if (DataBrowserModel.FN_DATA_TABLE_SOURCE_EXPOSED.equalsIgnoreCase(propName)) {
 			renderDataInTableInView(view.getDataTable(), model.getColInfoMap(), 
 							model.getTableDataSourceFormat(), model.getDataTableSource());
-		} /*else if(DataBrowserModel.FN_DATA_TABLE_SOURCE.equalsIgnoreCase(propName)){
-			
-		}*/ else if(DataBrowserModel.FN_PAGINATION.equalsIgnoreCase(propName)){
+		} else if(DataBrowserModel.FN_DATA_TABLE_SOURCE.equalsIgnoreCase(propName)){
 			Pagination p = model.getPagination();
+			int srcSize = model.getDataTableSource().size();
+			int itemsPerPage = p.getItemsPerPage();
+			int pageCountForEvenSize = (srcSize / itemsPerPage);
+			p.setTotalPageCount((srcSize % itemsPerPage) == 0 ? pageCountForEvenSize : pageCountForEvenSize + 1);
 			p.removePaginationListener(Pagination.PAGINATE_CONTENT_ID);
 			p.addPaginationListener(Pagination.PAGINATE_CONTENT_ID, new PaginationListener() {
 				@Override public void pageChanged(int pageNum) {
@@ -155,9 +198,22 @@ public class DataBrowserController<E> implements ModelListener {
 			});
 			
 			renderPageNumbersInView(p.getPageNumsExposed());
-			
-			view.getPageBtns()[0].doClick();
+			///nageeror kapag pinage last then sort plangak investigate pls
+			view.getPageBtns()[DataBrowserUtil.getIndexOfNumFromArray(p.getPageNumsExposed(), p.getCurrentPageNum())].doClick();
 		}
+//		} else if(DataBrowserModel.FN_PAGINATION.equalsIgnoreCase(propName)){
+//			Pagination p = model.getPagination();
+//			p.removePaginationListener(Pagination.PAGINATE_CONTENT_ID);
+//			p.addPaginationListener(Pagination.PAGINATE_CONTENT_ID, new PaginationListener() {
+//				@Override public void pageChanged(int pageNum) {
+//					model.setDataTableSourceExposed(getPaginatedSource(model.getPagination(), model.getDataTableSource()));
+//				}
+//			});
+//			
+//			renderPageNumbersInView(p.getPageNumsExposed());
+//			
+//			view.getPageBtns()[0].doClick();
+//		}
 		
 		//the following fragments should also be put in place ok.
 		//|| DataBrowserModel.FN_DATA_TABLE_SOURCE_FORMAT.equalsIgnoreCase(propName)

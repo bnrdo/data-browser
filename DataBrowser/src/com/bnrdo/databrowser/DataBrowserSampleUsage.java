@@ -9,24 +9,18 @@ import java.util.List;
 import java.util.Random;
 
 import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.JTable;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableModel;
 
 import com.bnrdo.databrowser.DataBrowser;
 import com.bnrdo.databrowser.domain.Person;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
 
-@SuppressWarnings("unchecked")
 public class DataBrowserSampleUsage {
 	public static void main(String[] args) {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
 				try {
+					//UIManager.setLookAndFeel("com.jgoodies.looks.plastic.PlasticXPLookAndFeel");
 					UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
 				} catch (Exception e){
 					e.printStackTrace();
@@ -47,20 +41,27 @@ public class DataBrowserSampleUsage {
 	private DataBrowser<Person> createDataBrowser() {
 		final DataBrowser<Person> dbrowse = new DataBrowser<Person>();
 		final List<Person> source =  generateRandomSource();
-		final Multimap<Integer, Object> colNameIndexMap = ArrayListMultimap.create();
+		final ColumnInfoMap colInfoMap = new ColumnInfoMap();
 		
-		colNameIndexMap.put(0, "First Name");
-		colNameIndexMap.put(0, "firstName");
-		colNameIndexMap.put(1, "Last Name");
-		colNameIndexMap.put(1, "lastName");
-		colNameIndexMap.put(2, "Birthday");
-		colNameIndexMap.put(2, "birthDay");
-		colNameIndexMap.put(3, "Age");
-		colNameIndexMap.put(3, "age");
-		colNameIndexMap.put(4, "Occupation");
-		colNameIndexMap.put(4, "occupation");
+		colInfoMap.putColumnName(0, "First Name");
+		colInfoMap.putColumnName(1, "Last Name");
+		colInfoMap.putColumnName(2, "Birthday");
+		colInfoMap.putColumnName(3, "Age");
+		colInfoMap.putColumnName(4, "Occupation");
 		
-		dbrowse.setColInfoMap(colNameIndexMap);
+		colInfoMap.putPropertyName(0, "getFirstName");
+		colInfoMap.putPropertyName(1, "lastName");
+		colInfoMap.putPropertyName(2, "birthDay");
+		colInfoMap.putPropertyName(3, "age");
+		colInfoMap.putPropertyName(4, "occupation");
+		
+		colInfoMap.putPropertyClass(0, String.class);
+		colInfoMap.putPropertyClass(1, String.class);
+		colInfoMap.putPropertyClass(2, String.class);
+		colInfoMap.putPropertyClass(3, Integer.class);
+		colInfoMap.putPropertyClass(4, String.class);
+		
+		dbrowse.setColInfoMap(colInfoMap);
 		dbrowse.setTableDataSourceFormat(new PersonFormat());
 		dbrowse.setDataTableSource(source);
 		dbrowse.setNumOfPagesExposed(5);

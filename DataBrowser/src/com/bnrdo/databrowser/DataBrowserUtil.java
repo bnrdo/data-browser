@@ -1,27 +1,17 @@
 package com.bnrdo.databrowser;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Multimap;
+import com.bnrdo.databrowser.comparator.IntegerComparator;
+import com.bnrdo.databrowser.comparator.StringComparator;
 
 public class DataBrowserUtil {
-	public static Object[] extractColNamesFromMap(Multimap<Integer, Object> map){
-		Set<Integer> keys = map.keySet();
-		Object[] retVal = new Object[keys.size()];
-		int i = 0;
-		
-		for(Integer s : map.keySet()){
-			retVal[i] = map.get(s).iterator().next();
-			i++;
-		}
-		
-		return retVal;
-	}
+	
 	
 	public static <E> Object[] convertPojoToObjectArray(E domain, List<String> propNamesToPut){
 		Object[] retVal = new Object[propNamesToPut.size()];
@@ -29,27 +19,14 @@ public class DataBrowserUtil {
 		return retVal;
 	}
 	
-	//colIndex 0 == key
-	public static <E> List<String> getMultimapColumnAsList(int colIndex, Multimap<E, Object> map){
-		List<String> retVal = new ArrayList<String>();
+	public static int getIndexOfNumFromArray(int[] numArr, int toFind){
+		int retVal = 0;
 		
-		if(colIndex == 0){
-			Iterator r = map.keySet().iterator();
-			
-			while(r.hasNext()){
-				retVal.add(r.next().toString());
-			}
-		}else{
-			for(E key : map.keySet()){
-				Iterator r = map.get(key).iterator();
-				int i = 0;
-				
-				while(r.hasNext()){
-					if(colIndex == i+1){
-						retVal.add(r.next().toString());
-					}
-					i++;
-				}
+		for(int i : numArr){
+			if(i == toFind){
+				break;
+			}else{
+				retVal++;	
 			}
 		}
 		
@@ -74,5 +51,13 @@ public class DataBrowserUtil {
 		int pageCountForEvenSize = (srcSize / itemsPerPage);
 		retVal = ((srcSize % itemsPerPage) == 0 ? pageCountForEvenSize : pageCountForEvenSize + 1);
 		return retVal;
+	}
+	
+
+	public static Comparator getComparator(Class forWhatClass){
+		if(forWhatClass == Integer.class)
+			return new IntegerComparator();
+		else
+			return new StringComparator();
 	}
 }
