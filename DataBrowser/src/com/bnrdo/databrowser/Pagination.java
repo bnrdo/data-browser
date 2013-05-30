@@ -47,7 +47,12 @@ public class Pagination {
 			ints.add(i);
 		}
 		pageNumsRaw = ArrayUtils.toPrimitive(ints.toArray(new Integer[ints.size()]));
-		setPageNumsExposed(ArrayUtils.subarray(pageNumsRaw, 0, maxExposableCount));
+		
+		//if the called when the datasource is newly set reset the page nums exposed to the initial one. else
+		//preserve the old page nums exposed (works perfectly in sorting)
+		if(getCurrentPageNum() == 1){
+			setPageNumsExposed(ArrayUtils.subarray(pageNumsRaw, 0, maxExposableCount));
+		}
 	}
 
 	public int getTotalPagecount() {
