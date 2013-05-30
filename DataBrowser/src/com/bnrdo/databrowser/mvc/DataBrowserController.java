@@ -4,23 +4,17 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.beans.PropertyChangeEvent;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
-import javax.swing.table.TableModel;
-import javax.swing.table.TableRowSorter;
 
 import org.apache.commons.beanutils.BeanComparator;
-import org.apache.commons.collections.comparators.ComparableComparator;
 import org.apache.commons.collections.comparators.ReverseComparator;
 
 import com.bnrdo.databrowser.ColumnInfoMap;
@@ -179,7 +173,6 @@ public class DataBrowserController<E> implements ModelListener {
 	//if data in model changes reflect it to the UI
 	public void propertyChange(PropertyChangeEvent evt){
 		String propName = evt.getPropertyName();
-		//Object newVal = evt.getNewValue();
 
 		if (DataBrowserModel.FN_DATA_TABLE_SOURCE_EXPOSED.equalsIgnoreCase(propName)) {
 			renderDataInTableInView(view.getDataTable(), model.getColInfoMap(), 
