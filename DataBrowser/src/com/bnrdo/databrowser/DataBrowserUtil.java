@@ -2,11 +2,13 @@ package com.bnrdo.databrowser;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.bnrdo.databrowser.comparator.DateComparator;
 import com.bnrdo.databrowser.comparator.IntegerComparator;
 import com.bnrdo.databrowser.comparator.StringComparator;
 
@@ -57,7 +59,10 @@ public class DataBrowserUtil {
 	public static Comparator getComparator(Class forWhatClass){
 		if(forWhatClass == Integer.class)
 			return new IntegerComparator();
-		else
+		else if(forWhatClass == Date.class){
+			return new DateComparator();
+		}else{
 			return new StringComparator();
+		}
 	}
 }

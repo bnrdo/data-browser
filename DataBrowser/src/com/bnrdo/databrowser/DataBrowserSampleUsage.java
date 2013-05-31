@@ -57,7 +57,7 @@ public class DataBrowserSampleUsage {
 		
 		colInfoMap.putPropertyClass(0, String.class);
 		colInfoMap.putPropertyClass(1, String.class);
-		colInfoMap.putPropertyClass(2, String.class);
+		colInfoMap.putPropertyClass(2, Date.class);
 		colInfoMap.putPropertyClass(3, Integer.class);
 		colInfoMap.putPropertyClass(4, String.class);
 		
