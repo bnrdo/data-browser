@@ -7,7 +7,7 @@ import java.util.Random;
 import javax.swing.event.SwingPropertyChangeSupport;
 
 import com.bnrdo.databrowser.ColumnInfoMap;
-import com.bnrdo.databrowser.DataBrowserUtil;
+import com.bnrdo.databrowser.DBroUtil;
 import com.bnrdo.databrowser.Pagination;
 import com.bnrdo.databrowser.TableDataSourceFormat;
 import com.bnrdo.databrowser.exception.ModelException;

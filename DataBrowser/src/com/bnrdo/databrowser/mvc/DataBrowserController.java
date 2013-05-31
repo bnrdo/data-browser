@@ -10,21 +10,28 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import javax.swing.AbstractAction;
 import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 
 import org.apache.commons.beanutils.BeanComparator;
 import org.apache.commons.collections.comparators.ReverseComparator;
 
+import com.bnrdo.databrowser.AbstractDocumentListener;
 import com.bnrdo.databrowser.ColumnInfoMap;
-import com.bnrdo.databrowser.DataBrowserUtil;
+import com.bnrdo.databrowser.DBroUtil;
 import com.bnrdo.databrowser.Pagination;
 import com.bnrdo.databrowser.TableDataSourceFormat;
 import com.bnrdo.databrowser.exception.ModelException;
 import com.bnrdo.databrowser.listener.ModelListener;
 import com.bnrdo.databrowser.listener.PaginationListener;
 import com.bnrdo.databrowser.mvc.DataBrowserView.PageButton;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
 
 public class DataBrowserController<E> implements ModelListener {
 	
@@ -38,7 +45,43 @@ public class DataBrowserController<E> implements ModelListener {
 		model.addModelListener(this);
 	}
 	
+	private void setUpFiltering(){
+		// the search category combobox
+		ColumnInfoMap colInfo = model.getColInfoMap();
+		view.getCboSearch().removeAllItems();
+		for(Integer t : colInfo.getKeySet()){
+			view.getCboSearch().addItem(colInfo.getColumnName(t));
+		}
+		
+		// the textfield
+		final JTextField txtSearch = view.getTxtSearch();
+		txtSearch.getDocument().addDocumentListener(new AbstractDocumentListener(){
+			@Override
+			public void documentChanged(DocumentEvent evt){
+				model.setDataTableSource(filterSource(txtSearch.getText()));
+			}
+		});
+	}
 	
+	private List<E> filterSource(String keyWord){
+		List<E> retVal = new ArrayList<E>();
+		TableDataSourceFormat<E> fmt = model.getTableDataSourceFormat();
+		for(E e : model.getDataTableSource()){
+			String str = fmt.getValueAt(view.getCboSearch().getSelectedIndex(), e);
+			if(str.toLowerCase().startsWith(keyWord.toLowerCase())){
+				retVal.add(e);
+			}
+		}
+		
+		return retVal;
+	}
+	/* PS there is no setUpPagination method since pagination is created after
+	 * after knowing the details of the data to be paginated.
+	 */
+	
+	
+	/* this method is called when the datasource is changed or when a page button is 
+	 * clicked*/
 	private void renderDataInTableInView(final JTable tbl, 
 										final ColumnInfoMap colInfo, 
 										final TableDataSourceFormat<E> fmt, List<E> source) {
@@ -46,8 +89,8 @@ public class DataBrowserController<E> implements ModelListener {
 		Object[] colNames = colInfo.getColumnNames();
 		DefaultTableModel tableModel = new DefaultTableModel(null, colNames);
 
-		for (E domain : model.getDataTableSourceExposed()) {
-			tableModel.addRow(DataBrowserUtil.extractRowFromFormat(fmt, domain));
+		for (E domain : model.getDataTableSourceExposed()){
+			tableModel.addRow(DBroUtil.extractRowFromFormat(fmt, domain));
 		}
 
 		tbl.setModel(tableModel);
@@ -65,7 +108,7 @@ public class DataBrowserController<E> implements ModelListener {
 		        		List<E> copy = new ArrayList<E>(model.getDataTableSource());
 		        		ColumnInfoMap map = model.getColInfoMap();
 		        		String propNameToSort = map.getPropertyName(selIndex);
-		        		Comparator comparatorToUse = DataBrowserUtil.getComparator(map.getPropertyClass(selIndex));
+		        		Comparator comparatorToUse = DBroUtil.getComparator(map.getPropertyClass(selIndex));
 		        		BeanComparator beanComp = new BeanComparator(propNameToSort, comparatorToUse);
 		        		
 		        		if(model.getSortOrder() == DataBrowserModel.SORT_ASC){
@@ -191,8 +234,13 @@ public class DataBrowserController<E> implements ModelListener {
 			});
 			
 			renderPageNumbersInView(p.getPageNumsExposed());
-			///nageeror kapag pinage last then sort plangak investigate pls
-			view.getPageBtns()[DataBrowserUtil.getIndexOfNumFromArray(p.getPageNumsExposed(), p.getCurrentPageNum())].doClick();
+			setUpFiltering();
+			
+			PageButton[] btns = view.getPageBtns(); 
+			if(btns.length > 0){
+				int index = DBroUtil.getIndexOfNumFromArray(p.getPageNumsExposed(), p.getCurrentPageNum()); 
+				btns[index].doClick();
+			}
 		}
 //		} else if(DataBrowserModel.FN_PAGINATION.equalsIgnoreCase(propName)){
 //			Pagination p = model.getPagination();

@@ -12,7 +12,7 @@ import com.bnrdo.databrowser.comparator.DateComparator;
 import com.bnrdo.databrowser.comparator.IntegerComparator;
 import com.bnrdo.databrowser.comparator.StringComparator;
 
-public class DataBrowserUtil {
+public class DBroUtil {
 	
 	
 	public static <E> Object[] convertPojoToObjectArray(E domain, List<String> propNamesToPut){
