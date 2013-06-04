@@ -66,12 +66,13 @@ public class DataBrowserController<E> implements ModelListener {
 	private List<E> filterSource(String keyWord){
 		List<E> retVal = new ArrayList<E>();
 		TableDataSourceFormat<E> fmt = model.getTableDataSourceFormat();
+		/*
 		for(E e : model.getDataTableSource()){
 			String str = fmt.getValueAt(view.getCboSearch().getSelectedIndex(), e);
 			if(str.toLowerCase().startsWith(keyWord.toLowerCase())){
 				retVal.add(e);
 			}
-		}
+		}*/
 		
 		return retVal;
 	}
@@ -84,7 +85,7 @@ public class DataBrowserController<E> implements ModelListener {
 	 * clicked*/
 	private void renderDataInTableInView(final JTable tbl, 
 										final ColumnInfoMap colInfo, 
-										final TableDataSourceFormat<E> fmt, List<E> source) {
+										final TableDataSourceFormat<E> fmt) {
 		
 		Object[] colNames = colInfo.getColumnNames();
 		DefaultTableModel tableModel = new DefaultTableModel(null, colNames);
@@ -105,6 +106,7 @@ public class DataBrowserController<E> implements ModelListener {
 					int selIndex = tbl.convertColumnIndexToModel(tbl.columnAtPoint(evt.getPoint()));
 				
 		        	if (!(selIndex < 0)) {
+		        		/*
 		        		List<E> copy = new ArrayList<E>(model.getDataTableSource());
 		        		ColumnInfoMap map = model.getColInfoMap();
 		        		String propNameToSort = map.getPropertyName(selIndex);
@@ -120,6 +122,7 @@ public class DataBrowserController<E> implements ModelListener {
 		        		}
 		        	    
 		        	    model.setDataTableSource(copy);
+		        	    */
 		        	}
 				}
 			});
@@ -196,7 +199,7 @@ public class DataBrowserController<E> implements ModelListener {
 		view.getBtnLast().setVisible(!(newVal == lastPageNum));
 	}
 	
-
+/*
 	private List<E> getPaginatedSource(Pagination p, List<E> source){
 		List<E> retVal = new ArrayList<E>();
 		List<E> sourceCopy = new ArrayList<E>(source);
@@ -212,29 +215,33 @@ public class DataBrowserController<E> implements ModelListener {
 		
 		return retVal;
 	}
-	
+	*/
 	//if data in model changes reflect it to the UI
 	public void propertyChange(PropertyChangeEvent evt){
 		String propName = evt.getPropertyName();
 
 		if (DataBrowserModel.FN_DATA_TABLE_SOURCE_EXPOSED.equalsIgnoreCase(propName)) {
 			renderDataInTableInView(view.getDataTable(), model.getColInfoMap(), 
-							model.getTableDataSourceFormat(), model.getDataTableSource());
-		} else if(DataBrowserModel.FN_DATA_TABLE_SOURCE.equalsIgnoreCase(propName)){
-			Pagination p = model.getPagination();
-			int srcSize = model.getDataTableSource().size();
-			int itemsPerPage = p.getItemsPerPage();
-			int pageCountForEvenSize = (srcSize / itemsPerPage);
-			p.setTotalPageCount((srcSize % itemsPerPage) == 0 ? pageCountForEvenSize : pageCountForEvenSize + 1);
+							model.getTableDataSourceFormat());
+		} else if(DataBrowserModel.FN_PAGINATION.equalsIgnoreCase(propName)){
+			
+			final Pagination p = model.getPagination();
 			p.removePaginationListener(Pagination.PAGINATE_CONTENT_ID);
 			p.addPaginationListener(Pagination.PAGINATE_CONTENT_ID, new PaginationListener() {
 				@Override public void pageChanged(int pageNum) {
-					model.setDataTableSourceExposed(getPaginatedSource(model.getPagination(), model.getDataTableSource()));
+					//computation for offset and limit of sql query
+					int itemsPerPage = p.getItemsPerPage();
+					int itemCount = model.getDataSourceRowCount();
+					int lastItem = p.getCurrentPageNum() * itemsPerPage;
+					int from = lastItem - itemsPerPage;
+					int to = (lastItem > (itemCount)) ? itemCount : lastItem;
+					
+					model.setDataTableSourceExposed(model.getScrolledSource(from, to));
 				}
 			});
 			
 			renderPageNumbersInView(p.getPageNumsExposed());
-			setUpFiltering();
+			//setUpFiltering();
 			
 			PageButton[] btns = view.getPageBtns(); 
 			if(btns.length > 0){

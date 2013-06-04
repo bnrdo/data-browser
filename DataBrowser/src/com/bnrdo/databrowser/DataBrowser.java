@@ -1,10 +1,17 @@
 package com.bnrdo.databrowser;
 
 import java.awt.BorderLayout;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.List;
 import java.util.Map;
 
 import javax.swing.JPanel;
+
+import org.hsqldb.DatabaseManager;
 
 import com.bnrdo.databrowser.exception.ModelException;
 import com.bnrdo.databrowser.mvc.DataBrowserController;
@@ -75,17 +82,19 @@ public class DataBrowser<E> extends JPanel {
     	model.setPagination(p);*/
     	validateInput();
     	
-    	Pagination p = new Pagination();
+    	/*Pagination p = new Pagination();
     	p.setCurrentPageNum(Pagination.FIRST_PAGE);
     	p.setMaxExposableCount(numOfPagesExposed);
     	p.setItemsPerPage(itemsPerPage);
-    	model.setPagination(p);
+    	model.setPagination(p);*/
     	
     	model.setColInfoMap(colInfoMap);
     	model.setTableDataSourceFormat(sourceFormat);
     	model.setDataTableSource(source);
     	
+    	
     }
+    
     private void validateInput(){
     	if(colInfoMap == null)
     		throw new ModelException("Column info map should not be null");

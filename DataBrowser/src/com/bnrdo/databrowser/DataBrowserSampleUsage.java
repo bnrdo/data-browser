@@ -49,7 +49,7 @@ public class DataBrowserSampleUsage {
 		colInfoMap.putColumnName(3, "Age");
 		colInfoMap.putColumnName(4, "Occupation");
 		
-		colInfoMap.putPropertyName(0, "getFirstName");
+		colInfoMap.putPropertyName(0, "firstName");
 		colInfoMap.putPropertyName(1, "lastName");
 		colInfoMap.putPropertyName(2, "birthDay");
 		colInfoMap.putPropertyName(3, "age");

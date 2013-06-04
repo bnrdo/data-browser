@@ -55,10 +55,10 @@ public class ColumnInfoMap {
 			list.set(2, classStr);
 		}
 	}
-	public String getColumnName(int index){
+	public String getColumnName(Integer index){
 		return map.get(index).get(0);
 	}
-	public String getPropertyName(int index){
+	public String getPropertyName(Integer index){
 		return map.get(index).get(1);
 	}
 	public Class getPropertyClass(int index){
@@ -99,5 +99,12 @@ public class ColumnInfoMap {
 	}
 	public Set<Integer> getKeySet(){
 		return map.keySet();
+	}
+	
+	public boolean hasIndex(Integer i){
+		if(map.containsKey(i))
+			return true;
+		
+		return false;
 	}
 }

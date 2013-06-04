@@ -1,5 +1,8 @@
 package com.bnrdo.databrowser;
 
+import java.util.Date;
+import java.util.List;
+
 import com.bnrdo.databrowser.domain.Person;
 
 public class PersonFormat implements TableDataSourceFormat<Person>{
@@ -21,5 +24,21 @@ public class PersonFormat implements TableDataSourceFormat<Person>{
 
 	public int getColumnCount() {
 		return 5;
+	}
+
+	@Override
+	public Person extractEntityFromList(List<String> list){
+		Person p = new Person();
+		p.setFirstName(list.get(0));
+		p.setLastName(list.get(1));
+		p.setBirthDay(new Date());
+		p.setAge(Integer.parseInt(list.get(3)));
+		/*try {
+			p.setBirthDay(new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy").parse(list.get(3)));
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}*/
+		p.setOccupation(list.get(4));
+		return p;
 	}
 }
