@@ -6,32 +6,24 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
-import javax.swing.AbstractAction;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
-
-import org.apache.commons.beanutils.BeanComparator;
-import org.apache.commons.collections.comparators.ReverseComparator;
 
 import com.bnrdo.databrowser.AbstractDocumentListener;
 import com.bnrdo.databrowser.ColumnInfoMap;
 import com.bnrdo.databrowser.DBroUtil;
+import com.bnrdo.databrowser.DataType;
 import com.bnrdo.databrowser.Pagination;
 import com.bnrdo.databrowser.TableDataSourceFormat;
 import com.bnrdo.databrowser.exception.ModelException;
 import com.bnrdo.databrowser.listener.ModelListener;
 import com.bnrdo.databrowser.listener.PaginationListener;
 import com.bnrdo.databrowser.mvc.DataBrowserView.PageButton;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Collections2;
 
 public class DataBrowserController<E> implements ModelListener {
 	
@@ -123,6 +115,15 @@ public class DataBrowserController<E> implements ModelListener {
 		        	    
 		        	    model.setDataTableSource(copy);
 		        	    */
+		        		ColumnInfoMap map = model.getColInfoMap();
+		        		String propNameToSort = map.getPropertyName(selIndex);
+		        		DataType propType = map.getPropertyType(selIndex);
+		        		
+		        		if(model.getSortOrder() == DataBrowserModel.SORT_ASC){
+		        			model.setSort(propNameToSort, DataBrowserModel.SORT_DESC, propType);
+		        		}else{
+		        			model.setSort(propNameToSort, DataBrowserModel.SORT_ASC, propType);
+		        		}
 		        	}
 				}
 			});
@@ -248,20 +249,14 @@ public class DataBrowserController<E> implements ModelListener {
 				int index = DBroUtil.getIndexOfNumFromArray(p.getPageNumsExposed(), p.getCurrentPageNum()); 
 				btns[index].doClick();
 			}
+		}else if(DataBrowserModel.FN_SORT_ORDER.equalsIgnoreCase(propName)){
+			Pagination p = model.getPagination();
+			PageButton[] btns = view.getPageBtns(); 
+			if(btns.length > 0){
+				int index = DBroUtil.getIndexOfNumFromArray(p.getPageNumsExposed(), p.getCurrentPageNum()); 
+				btns[index].doClick();
+			}
 		}
-//		} else if(DataBrowserModel.FN_PAGINATION.equalsIgnoreCase(propName)){
-//			Pagination p = model.getPagination();
-//			p.removePaginationListener(Pagination.PAGINATE_CONTENT_ID);
-//			p.addPaginationListener(Pagination.PAGINATE_CONTENT_ID, new PaginationListener() {
-//				@Override public void pageChanged(int pageNum) {
-//					model.setDataTableSourceExposed(getPaginatedSource(model.getPagination(), model.getDataTableSource()));
-//				}
-//			});
-//			
-//			renderPageNumbersInView(p.getPageNumsExposed());
-//			
-//			view.getPageBtns()[0].doClick();
-//		}
 		
 		//the following fragments should also be put in place ok.
 		//|| DataBrowserModel.FN_DATA_TABLE_SOURCE_FORMAT.equalsIgnoreCase(propName)

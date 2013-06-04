@@ -86,6 +86,34 @@ public class DBroUtil {
     	
     	return rowsInserted;
     }
+	
+	public static String getSortQryChunk(String sortCol, String sortOrder, DataType sortType){
+		StringBuilder retVal = new StringBuilder();
+		retVal.append("ORDER BY "); 
+		
+		if(sortType.equals(DataType.INTEGER)){
+			retVal.append("CAST(").append(sortCol)
+					.append(" AS ").append(sortType)
+					.append(")").append(sortOrder);;
+		}else if(sortType.equals(DataType.BIGDECIMAL)){
+			retVal.append("CAST(").append(sortCol)
+					.append(" AS ").append("DOUBLE")
+					.append(")").append(sortOrder);;
+		}else if(sortType.equals(DataType.BOOLEAN)){
+			retVal.append("CAST(").append(sortCol)
+					.append(" AS ").append(sortType).append(")")
+					.append(sortOrder);;
+		}else if(sortType.equals(DataType.DATE)){
+			retVal.append("CAST(").append(sortCol)
+					.append(" AS ").append(DataType.DATE)
+					.append(")").append(sortOrder);;
+		}else {
+			retVal.append(sortCol).append(" ").append(sortOrder);
+		}
+		
+		return retVal.toString();
+	}
+	
     public static String translateColInfoMapToCreateDbQuery(ColumnInfoMap colInfoMap){
     	StringBuilder retVal = new StringBuilder();
     	boolean primarySet = false;

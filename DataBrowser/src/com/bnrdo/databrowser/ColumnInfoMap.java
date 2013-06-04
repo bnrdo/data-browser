@@ -41,18 +41,18 @@ public class ColumnInfoMap {
 			list.set(1, propName);
 		}
 	}
-	public void putPropertyClass(int index, Class clazz){
+	public void putPropertyType(int index, DataType type){
 		List<String> list = map.get(index);
-		String classStr = clazz.toString();
+		String typeStr = type.toString();
 		
 		if(list == null){
 			List<String> newList =new ArrayList<String>();
 			newList.add("");
 			newList.add("");
-			newList.add(classStr);
+			newList.add(typeStr);
 			map.put(index, newList);
 		}else{
-			list.set(2, classStr);
+			list.set(2, typeStr);
 		}
 	}
 	public String getColumnName(Integer index){
@@ -61,19 +61,8 @@ public class ColumnInfoMap {
 	public String getPropertyName(Integer index){
 		return map.get(index).get(1);
 	}
-	public Class getPropertyClass(int index){
-		Class retVal = Object.class;
-		String propSet = map.get(index).get(2); 
-		if(propSet.contains("String")){
-			retVal = String.class;
-		}else if(propSet.contains("Integer")){
-			retVal = Integer.class;
-		}else if(propSet.contains("Double")){
-			retVal = Double.class;
-		}else if(propSet.contains("Date")){
-			retVal = Date.class;
-		}
-		return retVal;
+	public DataType getPropertyType(int index){
+		return DataType.valueOf(map.get(index).get(2));
 	}
 	public String[] getColumnNames(){
 		String[] retVal = new String[map.size()];

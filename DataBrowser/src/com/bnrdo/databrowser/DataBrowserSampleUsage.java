@@ -55,11 +55,11 @@ public class DataBrowserSampleUsage {
 		colInfoMap.putPropertyName(3, "age");
 		colInfoMap.putPropertyName(4, "occupation");
 		
-		colInfoMap.putPropertyClass(0, String.class);
-		colInfoMap.putPropertyClass(1, String.class);
-		colInfoMap.putPropertyClass(2, Date.class);
-		colInfoMap.putPropertyClass(3, Integer.class);
-		colInfoMap.putPropertyClass(4, String.class);
+		colInfoMap.putPropertyType(0, DataType.STRING);
+		colInfoMap.putPropertyType(1, DataType.STRING);
+		colInfoMap.putPropertyType(2, DataType.DATE);
+		colInfoMap.putPropertyType(3, DataType.INTEGER);
+		colInfoMap.putPropertyType(4, DataType.STRING);
 		
 		dbrowse.setColInfoMap(colInfoMap);
 		dbrowse.setTableDataSourceFormat(new PersonFormat());

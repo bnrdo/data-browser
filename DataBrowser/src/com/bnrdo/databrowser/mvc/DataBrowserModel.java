@@ -16,21 +16,22 @@ import javax.swing.event.SwingPropertyChangeSupport;
 
 import com.bnrdo.databrowser.ColumnInfoMap;
 import com.bnrdo.databrowser.DBroUtil;
+import com.bnrdo.databrowser.DataType;
 import com.bnrdo.databrowser.Pagination;
 import com.bnrdo.databrowser.TableDataSourceFormat;
 import com.bnrdo.databrowser.exception.ModelException;
 
-@SuppressWarnings("unchecked")
 public class DataBrowserModel<E> {
-
+	
 	public static final String FN_DATA_TABLE_SOURCE_EXPOSED = "dataTableSourceExposed";
 	public static final String FN_DATA_TABLE_SOURCE = "dataTableSource";
 	public static final String FN_DATA_TABLE_SOURCE_FORMAT = "tableDataSourceFormat";
 	public static final String FN_COL_INFO_MAP = "colInfoMap";
 	public static final String FN_PAGINATION = "pagination";
+	public static final String FN_SORT_ORDER = "sortOrder";
 
-	public static final int SORT_ASC = 0;
-	public static final int SORT_DESC = 1;
+	public static final String SORT_ASC = "ASC";
+	public static final String SORT_DESC = "DESC";
 
 	private Pagination pagination;
 	private List<E> dataTableSourceExposed;
@@ -39,45 +40,24 @@ public class DataBrowserModel<E> {
 
 	private SwingPropertyChangeSupport propChangeFirer;
 
-	private int sortOrder;
+	private String sortOrder;
+	private String sortCol;
+	private DataType sortType;
 	private int dataSourceRowCount;
 
 	public DataBrowserModel() {
 		propChangeFirer = new SwingPropertyChangeSupport(this);
-		sortOrder = SORT_ASC;
 		dataSourceRowCount = 0;
 	}
 
 	public void setPagination(Pagination p) {
-		/*
-		 * if(dataTableSource == null || tableDataSourceFormat == null ||
-		 * colInfoMap == null){ throw new ModelException(
-		 * "You should completely setup the table's data source before setting it's pagination."
-		 * ); }
-		 * 
-		 * int srcSize = dataTableSource.size(); int itemsPerPage =
-		 * p.getItemsPerPage(); int pageCountForEvenSize = (srcSize /
-		 * itemsPerPage);
-		 * 
-		 * p.setTotalPageCount((srcSize % itemsPerPage) == 0 ?
-		 * pageCountForEvenSize : pageCountForEvenSize + 1);
-		 */
-
 		Pagination oldVal = pagination;
 		pagination = p;
 		propChangeFirer.firePropertyChange(FN_PAGINATION, oldVal, pagination);
-
-		// pagination = p;
 	}
 
 	public void setDataTableSource(List<E> list) {
-		/*
-		 * if(colInfoMap == null || tableDataSourceFormat == null || pagination
-		 * == null){ dataTableSource = list; }else{ List<E> oldVal =
-		 * dataTableSource; dataTableSource = list;
-		 * propChangeFirer.firePropertyChange(FN_DATA_TABLE_SOURCE, oldVal,
-		 * list); }
-		 */
+		
 		Connection connection = null;
 		Statement statement = null;
 
@@ -108,8 +88,7 @@ public class DataBrowserModel<E> {
 		}
 
 		// realize the pagination info after setting the base datasource..
-		// convention over configuration, if pagination is null provide default
-		// vals
+		// convention over configuration, if pagination is null provide default vals
 		Pagination p = new Pagination();
 		p.setCurrentPageNum(Pagination.FIRST_PAGE);
 		p.setMaxExposableCount(10);
@@ -123,13 +102,6 @@ public class DataBrowserModel<E> {
 				: pageCountForEvenSize + 1);
 
 		setPagination(p);
-		/*
-		 * if(colInfoMap == null || tableDataSourceFormat == null || pagination
-		 * == null){ dataTableSource = list; }else{ List<E> oldVal =
-		 * dataTableSource; dataTableSource = list;
-		 * propChangeFirer.firePropertyChange(FN_DATA_TABLE_SOURCE, oldVal,
-		 * list); }
-		 */
 	}
 	public int getDataSourceRowCount(){
 		return dataSourceRowCount;
@@ -137,6 +109,7 @@ public class DataBrowserModel<E> {
 
 	public List<E> getScrolledSource(int from, int to){
 		 List<E> retVal = new ArrayList<E>();
+		 
 		 Connection connection = null;  
 		 Statement statement = null;  
 		 ResultSet rs = null;
@@ -146,8 +119,15 @@ public class DataBrowserModel<E> {
 
 			 connection = DriverManager.getConnection("jdbc:hsqldb:mem:data-browser", "sa", "");
 			 statement = connection.createStatement(); 
-
-			 rs = statement.executeQuery("SELECT * FROM data_browser_persist ORDER BY CAST(AGE AS INTEGER) LIMIT " + (to - from) + " OFFSET " + from + "");
+			 
+			 if(sortCol == null || sortOrder == null || sortType == null){
+				 sortCol = colInfoMap.getPropertyName(0);
+				 sortOrder = SORT_ASC;
+				 sortType = colInfoMap.getPropertyType(0);
+			 }
+			 
+			 rs = statement.executeQuery("SELECT * FROM data_browser_persist " + DBroUtil.getSortQryChunk(sortCol, sortOrder, sortType) + " LIMIT " + (to - from) + " OFFSET " + from + "");
+			 
 			 while(rs.next()){
 	         	List<String> cont = new ArrayList<String>();
 	         	cont.add(rs.getString(1));
@@ -197,8 +177,7 @@ public class DataBrowserModel<E> {
 		} else {
 			TableDataSourceFormat<E> oldVal = tableDataSourceFormat;
 			tableDataSourceFormat = fmt;
-			propChangeFirer.firePropertyChange(FN_DATA_TABLE_SOURCE_FORMAT,
-					oldVal, fmt);
+			propChangeFirer.firePropertyChange(FN_DATA_TABLE_SOURCE_FORMAT, oldVal, fmt);
 		}
 	}
 
@@ -209,20 +188,21 @@ public class DataBrowserModel<E> {
 	public TableDataSourceFormat<E> getTableDataSourceFormat() {
 		return tableDataSourceFormat;
 	}
-
-	/*
-	 * public List<E> getDataTableSource(){ return dataTableSource; }
-	 */
+	
 	public Pagination getPagination() {
 		return pagination;
 	}
 
-	public int getSortOrder() {
+	public String getSortOrder() {
 		return sortOrder;
 	}
 
-	public void setSortOrder(int sortOrder) {
-		this.sortOrder = sortOrder;
+	public void setSort(String colToSort, String order, DataType type) {
+		String oldVal = sortOrder;
+		sortOrder = order;
+		sortCol = colToSort;
+		sortType = type;
+		propChangeFirer.firePropertyChange(FN_SORT_ORDER, oldVal, order);
 	}
 
 	public void addModelListener(PropertyChangeListener prop) {
