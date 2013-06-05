@@ -2,24 +2,19 @@ package com.bnrdo.databrowser.mvc;
 
 import java.beans.PropertyChangeListener;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
 import javax.swing.event.SwingPropertyChangeSupport;
 
 import com.bnrdo.databrowser.ColumnInfoMap;
+import com.bnrdo.databrowser.Constants.SORT_ORDER;
+import com.bnrdo.databrowser.Constants.SQL_TYPE;
 import com.bnrdo.databrowser.DBroUtil;
-import com.bnrdo.databrowser.DataType;
 import com.bnrdo.databrowser.Pagination;
 import com.bnrdo.databrowser.TableDataSourceFormat;
-import com.bnrdo.databrowser.exception.ModelException;
 
 public class DataBrowserModel<E> {
 	
@@ -30,9 +25,6 @@ public class DataBrowserModel<E> {
 	public static final String FN_PAGINATION = "pagination";
 	public static final String FN_SORT_ORDER = "sortOrder";
 
-	public static final String SORT_ASC = "ASC";
-	public static final String SORT_DESC = "DESC";
-
 	private Pagination pagination;
 	private List<E> dataTableSourceExposed;
 	private TableDataSourceFormat<E> tableDataSourceFormat;
@@ -40,11 +32,19 @@ public class DataBrowserModel<E> {
 
 	private SwingPropertyChangeSupport propChangeFirer;
 
-	private String sortOrder;
-	private String sortCol;
-	private DataType sortType;
+	private SORT_ORDER sortOrder;
+	private SQL_TYPE sortType;
+	private String sortCol;	
+	private String filterCol;
+	private String filterKey;
 	private int dataSourceRowCount;
 
+	private String QRY_TEMPLATE = "SELECT * FROM data_browser_persist " +
+	 		"WHERE filter_col like '%filter_key'" + 
+	 		"ORDER BY CAST(col_name AS sort_type) sort_order " +
+	 		"LIMIT limit_count " +
+	 		"OFFSET offset_count";
+	
 	public DataBrowserModel() {
 		propChangeFirer = new SwingPropertyChangeSupport(this);
 		dataSourceRowCount = 0;
@@ -58,20 +58,16 @@ public class DataBrowserModel<E> {
 
 	public void setDataTableSource(List<E> list) {
 		
-		Connection connection = null;
+		Connection conn = null;
 		Statement statement = null;
 
 		try {
-			Class.forName("org.hsqldb.jdbcDriver");
-
-			connection = DriverManager.getConnection(
-					"jdbc:hsqldb:mem:data-browser", "sa", "");
-			statement = connection.createStatement();
+			conn = DBroUtil.getConnection();
+			statement = conn.createStatement();
 
 			// table name = data_browser_persist
-			String createTableQry = DBroUtil
-					.translateColInfoMapToCreateDbQuery(colInfoMap);
-			statement.execute(createTableQry);
+			statement.execute("DROP TABLE IF EXISTS DATA_BROWSER_PERSIST;");
+			statement.execute(DBroUtil.translateColInfoMapToCreateDbQuery(colInfoMap));
 
 			dataSourceRowCount = DBroUtil.populateTable(statement, list, tableDataSourceFormat);
 	    	System.out.println(dataSourceRowCount + " rows successfully inserted.");
@@ -81,11 +77,15 @@ public class DataBrowserModel<E> {
 		} finally {
 			try {
 				statement.close();
-				connection.close();
+				conn.close();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
+		//set the value for filter col and filter key. at the first datasource set,
+		//filter should be in the first column and should return all the data ('%')
+		filterCol = colInfoMap.getPropertyName(0);
+		filterKey = "";
 
 		// realize the pagination info after setting the base datasource..
 		// convention over configuration, if pagination is null provide default vals
@@ -106,27 +106,46 @@ public class DataBrowserModel<E> {
 	public int getDataSourceRowCount(){
 		return dataSourceRowCount;
 	}
+	
+	public List<E> getFilteredSource(String key, String colFilter){
+		List<E> retVal = new ArrayList<E>();
+		
+		return retVal;
+	}
 
 	public List<E> getScrolledSource(int from, int to){
 		 List<E> retVal = new ArrayList<E>();
-		 
-		 Connection connection = null;  
+		
+		 Connection conn = null;  
 		 Statement statement = null;  
 		 ResultSet rs = null;
 		 
 		 try {  
-			 Class.forName("org.hsqldb.jdbcDriver");  
-
-			 connection = DriverManager.getConnection("jdbc:hsqldb:mem:data-browser", "sa", "");
-			 statement = connection.createStatement(); 
+			 conn = DBroUtil.getConnection();
+			 statement = conn.createStatement(); 
 			 
 			 if(sortCol == null || sortOrder == null || sortType == null){
 				 sortCol = colInfoMap.getPropertyName(0);
-				 sortOrder = SORT_ASC;
+				 sortOrder = SORT_ORDER.ASC;
 				 sortType = colInfoMap.getPropertyType(0);
 			 }
 			 
-			 rs = statement.executeQuery("SELECT * FROM data_browser_persist " + DBroUtil.getSortQryChunk(sortCol, sortOrder, sortType) + " LIMIT " + (to - from) + " OFFSET " + from + "");
+			 String qry = QRY_TEMPLATE;
+			 
+			 if(sortType == SQL_TYPE.STRING){
+				 qry = qry.replace("CAST(col_name AS sort_type)", sortCol);	 
+			 }else{
+				 qry = qry.replace("col_name", sortCol);			 
+				 qry = qry.replace("sort_type", sortType.toString());
+			 }
+			 qry = qry.replace("sort_order", sortOrder.toString());
+			 qry = qry.replace("limit_count", Integer.toString((to - from)));
+			 qry = qry.replace("offset_count", Integer.toString(from));
+			 qry = qry.replace("filter_col", filterCol);
+			 qry = qry.replace("filter_key", filterKey);
+			 
+			 System.out.println("query is : " + qry);
+			 rs = statement.executeQuery(qry);
 			 
 			 while(rs.next()){
 	         	List<String> cont = new ArrayList<String>();
@@ -140,11 +159,13 @@ public class DataBrowserModel<E> {
 		 } catch (Exception e) {  
 			 e.printStackTrace();  
 		 } finally {  
-			 try {  
-				statement.close();   
-				} catch (Exception e) {  
-					e.printStackTrace();  
-				}  
+			 try {
+				 rs.close();
+				 statement.close();
+				 conn.close();
+			 } catch (Exception e) {
+				 e.printStackTrace();
+			 }
 		 } 
 		 
          return retVal;
@@ -193,16 +214,24 @@ public class DataBrowserModel<E> {
 		return pagination;
 	}
 
-	public String getSortOrder() {
+	public SORT_ORDER getSortOrder() {
 		return sortOrder;
 	}
 
-	public void setSort(String colToSort, String order, DataType type) {
-		String oldVal = sortOrder;
+	public void setSort(String colToSort, SORT_ORDER order, SQL_TYPE type) {
+		SORT_ORDER oldVal = sortOrder;
 		sortOrder = order;
 		sortCol = colToSort;
 		sortType = type;
 		propChangeFirer.firePropertyChange(FN_SORT_ORDER, oldVal, order);
+	}
+
+	public void setFilterCol(String col) {
+		filterCol = col;
+	}
+
+	public void setFilterKey(String key) {
+		filterKey = key;
 	}
 
 	public void addModelListener(PropertyChangeListener prop) {

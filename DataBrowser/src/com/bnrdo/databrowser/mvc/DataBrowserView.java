@@ -78,6 +78,8 @@ public class DataBrowserView {
         };
 
         tblData = new JTable();
+        tblData.setVisible(false);
+        
         JScrollPane pane = new JScrollPane(tblData);
         retVal.add(pane);
         return retVal;

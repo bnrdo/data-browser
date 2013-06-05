@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.bnrdo.databrowser.Constants.SQL_TYPE;
+
 public class ColumnInfoMap {
 	
 	private Map<Integer,List<String>> map;
@@ -41,7 +43,7 @@ public class ColumnInfoMap {
 			list.set(1, propName);
 		}
 	}
-	public void putPropertyType(int index, DataType type){
+	public void putPropertyType(int index, SQL_TYPE type){
 		List<String> list = map.get(index);
 		String typeStr = type.toString();
 		
@@ -61,8 +63,8 @@ public class ColumnInfoMap {
 	public String getPropertyName(Integer index){
 		return map.get(index).get(1);
 	}
-	public DataType getPropertyType(int index){
-		return DataType.valueOf(map.get(index).get(2));
+	public SQL_TYPE getPropertyType(int index){
+		return SQL_TYPE.valueOf(map.get(index).get(2));
 	}
 	public String[] getColumnNames(){
 		String[] retVal = new String[map.size()];

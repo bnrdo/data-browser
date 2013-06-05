@@ -28,19 +28,12 @@ public class DataBrowser<E> extends JPanel {
     private List<E> source;
     private TableDataSourceFormat<E> sourceFormat;
     private ColumnInfoMap colInfoMap;
-    
-    //pagination settings
-    private int numOfPagesExposed;
-    private int itemsPerPage;
 
     public DataBrowser() {
         view = new DataBrowserView();
         model = new DataBrowserModel<E>();
 
         controller = new DataBrowserController<E>(view, model);
-        
-        numOfPagesExposed = 10;
-        itemsPerPage = 10;
         
         setLayout(new BorderLayout());
         add(view.getUI(), BorderLayout.CENTER);
@@ -54,15 +47,6 @@ public class DataBrowser<E> extends JPanel {
     	sourceFormat = fmt;
     }
     
-
-    public void setItemsPerPage(int num) {
-		itemsPerPage = num;
-	}
-
-	public void setNumOfPagesExposed(int num) {
-		numOfPagesExposed = num;
-	}
-
 	public void setColInfoMap(ColumnInfoMap map){
     	colInfoMap = map;
     }

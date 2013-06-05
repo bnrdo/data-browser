@@ -3,6 +3,7 @@ package com.bnrdo.databrowser;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -12,6 +13,7 @@ import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
+import com.bnrdo.databrowser.Constants.SQL_TYPE;
 import com.bnrdo.databrowser.DataBrowser;
 import com.bnrdo.databrowser.domain.Person;
 
@@ -55,17 +57,15 @@ public class DataBrowserSampleUsage {
 		colInfoMap.putPropertyName(3, "age");
 		colInfoMap.putPropertyName(4, "occupation");
 		
-		colInfoMap.putPropertyType(0, DataType.STRING);
-		colInfoMap.putPropertyType(1, DataType.STRING);
-		colInfoMap.putPropertyType(2, DataType.DATE);
-		colInfoMap.putPropertyType(3, DataType.INTEGER);
-		colInfoMap.putPropertyType(4, DataType.STRING);
+		colInfoMap.putPropertyType(0, SQL_TYPE.STRING);
+		colInfoMap.putPropertyType(1, SQL_TYPE.STRING);
+		colInfoMap.putPropertyType(2, SQL_TYPE.TIMESTAMP);
+		colInfoMap.putPropertyType(3, SQL_TYPE.INTEGER);
+		colInfoMap.putPropertyType(4, SQL_TYPE.STRING);
 		
 		dbrowse.setColInfoMap(colInfoMap);
 		dbrowse.setTableDataSourceFormat(new PersonFormat());
 		dbrowse.setDataTableSource(source);
-		dbrowse.setNumOfPagesExposed(5);
-		dbrowse.setItemsPerPage(10);
 		dbrowse.create();
 		
 		dbrowse.getTestButton().addActionListener(new ActionListener() {
@@ -86,7 +86,18 @@ public class DataBrowserSampleUsage {
 			Person p = new Person();
 			p.setFirstName("First Name" + i);
 			p.setLastName("Last Name" + i);
+			
+			//date should be sumthin like this
+			String target = "2013-6-05 10:59:11.00129";
+			java.text.DateFormat df = new java.text.SimpleDateFormat("yyyy-MM-dd hh:mm:ss.SSSSSSSSS", java.util.Locale.ENGLISH);
+			Date result = null;
+		    try {
+				result =  df.parse(target);
+			} catch (ParseException e) {
+				e.printStackTrace();
+			}  
 			p.setBirthDay(new Date());
+			
 			p.setOccupation("Occupation" + i);
 			p.setAge(i);
 			retVal.add(p);

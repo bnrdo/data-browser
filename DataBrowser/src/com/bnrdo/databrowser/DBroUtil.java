@@ -1,5 +1,7 @@
 package com.bnrdo.databrowser;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -10,13 +12,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.bnrdo.databrowser.Constants.SORT_ORDER;
+import com.bnrdo.databrowser.Constants.SQL_TYPE;
 import com.bnrdo.databrowser.comparator.DateComparator;
 import com.bnrdo.databrowser.comparator.IntegerComparator;
 import com.bnrdo.databrowser.comparator.StringComparator;
 
 public class DBroUtil {
 	
-	
+	public static Connection getConnection(){
+		Connection con = null;
+		try {
+			Class.forName("org.hsqldb.jdbcDriver");
+			con = DriverManager.getConnection("jdbc:hsqldb:mem:data-browser", "sa", "");
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		}  catch(SQLException e){
+			e.printStackTrace();
+		}
+		return con;
+	}
 	public static <E> Object[] convertPojoToObjectArray(E domain, List<String> propNamesToPut){
 		Object[] retVal = new Object[propNamesToPut.size()];
 		System.out.println(propNamesToPut);
@@ -76,7 +91,9 @@ public class DBroUtil {
     		bdr.append("INSERT INTO data_browser_persist VALUES ('");
     		for(int i = 0; i < fmt.getColumnCount(); i++){
     			bdr.append(fmt.getValueAt(i, e)).append("', '");
+    			System.out.print(fmt.getValueAt(i, e) + " ");
     		}
+    		System.out.println();
     		bdr.replace(bdr.length()-3, bdr.length(), "");
     		bdr.append(")");
     		
@@ -87,26 +104,26 @@ public class DBroUtil {
     	return rowsInserted;
     }
 	
-	public static String getSortQryChunk(String sortCol, String sortOrder, DataType sortType){
+	public static String getSortQryChunk(String sortCol, SORT_ORDER sortOrder, SQL_TYPE sortType){
 		StringBuilder retVal = new StringBuilder();
 		retVal.append("ORDER BY "); 
 		
-		if(sortType.equals(DataType.INTEGER)){
+		if(sortType.equals(SQL_TYPE.INTEGER)){
 			retVal.append("CAST(").append(sortCol)
 					.append(" AS ").append(sortType)
-					.append(")").append(sortOrder);;
-		}else if(sortType.equals(DataType.BIGDECIMAL)){
+					.append(") ").append(sortOrder);;
+		}else if(sortType.equals(SQL_TYPE.BIGDECIMAL)){
 			retVal.append("CAST(").append(sortCol)
 					.append(" AS ").append("DOUBLE")
-					.append(")").append(sortOrder);;
-		}else if(sortType.equals(DataType.BOOLEAN)){
+					.append(") ").append(sortOrder);;
+		}else if(sortType.equals(SQL_TYPE.BOOLEAN)){
 			retVal.append("CAST(").append(sortCol)
-					.append(" AS ").append(sortType).append(")")
-					.append(sortOrder);;
-		}else if(sortType.equals(DataType.DATE)){
+					.append(" AS ").append(sortType)
+					.append(") ").append(sortOrder);;
+		}else if(sortType.equals(SQL_TYPE.TIMESTAMP)){
 			retVal.append("CAST(").append(sortCol)
-					.append(" AS ").append(DataType.DATE)
-					.append(")").append(sortOrder);;
+					.append(" AS ").append(SQL_TYPE.TIMESTAMP)
+					.append(") ").append(sortOrder);;
 		}else {
 			retVal.append(sortCol).append(" ").append(sortOrder);
 		}
