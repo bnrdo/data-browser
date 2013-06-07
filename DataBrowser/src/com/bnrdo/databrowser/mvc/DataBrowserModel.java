@@ -44,7 +44,7 @@ private int a;
 	private String QRY_TEMPLATE = "SELECT * FROM data_browser_persist "
 			+ "WHERE filter_col like 'filter_key%' "
 			+ "ORDER BY CAST(col_name AS sort_type) sort_order "
-			+ "LIMIT limit_count " + "OFFSET offset_count";
+			+ "LIMIT limit_count " + "OFFSET offset_count ";
 	
 	private String QRY_RECORD_COUND = "SELECT COUNT(*) FROM data_browser_persist WHERE filter_col like 'filter_key%'";
 
