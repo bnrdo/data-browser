@@ -8,8 +8,10 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.SwingWorker;
 import javax.swing.event.SwingPropertyChangeSupport;
 
+import com.bnrdo.databrowser.AppStat;
 import com.bnrdo.databrowser.ColumnInfoMap;
 import com.bnrdo.databrowser.Constants.SORT_ORDER;
 import com.bnrdo.databrowser.Constants.SQL_TYPE;
@@ -36,7 +38,9 @@ public class DataBrowserModel<E> {
 	private int dataSourceRowCount;
 	private int recordLimit;
 	private int recordOffset;
-
+	
+	private boolean applicationLoading;
+private int a;
 	private String QRY_TEMPLATE = "SELECT * FROM data_browser_persist "
 			+ "WHERE filter_col like 'filter_key%' "
 			+ "ORDER BY CAST(col_name AS sort_type) sort_order "
@@ -49,6 +53,7 @@ public class DataBrowserModel<E> {
 		dataSourceRowCount = 0;
 		recordLimit = 0;
 		recordOffset = 0;
+		applicationLoading = false;
 	}
 
 	public void setPagination(Pagination p) {
@@ -57,7 +62,7 @@ public class DataBrowserModel<E> {
 		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_PAGINATION, oldVal, pagination);
 	}
 
-	public void setDataTableSource(List<E> list) {
+	public void setDataTableSource(final List<E> list) {
 		
 		if(colInfoMap == null){
 			throw new ModelException("Column info map should be supplied before setting the data source.");
@@ -66,42 +71,54 @@ public class DataBrowserModel<E> {
 		if(tableDataSourceFormat == null){
 			throw new ModelException("Table data source format should be supplied before setting the data source..");
 		}
-
-		Connection conn = null;
-		Statement statement = null;
-
-		try {
-			conn = DBroUtil.getConnection();
-			statement = conn.createStatement();
-
-			// table name = data_browser_persist
-			statement.execute("DROP TABLE IF EXISTS DATA_BROWSER_PERSIST;");
-			statement.execute("SET IGNORECASE TRUE;");
-			statement.execute(DBroUtil.translateColInfoMapToCreateDbQuery(colInfoMap));
-
-			DBroUtil.populateTable(statement, list, tableDataSourceFormat);
-			
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-			try {
-				statement.close();
-				conn.close();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-		/* default values for sorting and filter
-		 */
+		
+		setApplicationLoading(true);
+		
 		sortCol = colInfoMap.getPropertyName(0);
 		sortOrder = SORT_ORDER.ASC;
 		sortType = colInfoMap.getPropertyType(0);
 	
 		filterCol = colInfoMap.getPropertyName(0);
 		filterKey = "";
+		derivePagination(list.size());
 		
-		// realize the pagination info after setting the base datasource.
-		derivePagination();
+	    new SwingWorker<Void, E>() {
+	        @Override
+	        protected Void doInBackground() throws Exception {
+	        	Connection conn = null;
+	    		Statement statement = null;
+	    		
+	        	try {
+	    			conn = DBroUtil.getConnection();
+	    			statement = conn.createStatement();
+
+	    			// table name = data_browser_persist
+	    			statement.execute("DROP TABLE IF EXISTS DATA_BROWSER_PERSIST;");
+	    			statement.execute("SET IGNORECASE TRUE;");
+	    			statement.execute(DBroUtil.translateColInfoMapToCreateDbQuery(colInfoMap));
+
+	    			DBroUtil.populateTable(statement, list, tableDataSourceFormat);
+	    			
+	    		} catch (Exception e) {
+	    			e.printStackTrace();
+	    		} finally {
+	    			try {
+	    				statement.close();
+	    				conn.close();
+	    			} catch (Exception e) {
+	    				e.printStackTrace();
+	    			}
+	    		}
+	        	
+				return null;
+	        }
+	        
+	        @Override
+	        protected void done() {
+	        	System.out.println("its done bitchachos");
+	        	setApplicationLoading(false);
+	        }
+	    }.execute();
 	}
 	
 	public int getDataSourceRowCount() {
@@ -139,7 +156,7 @@ public class DataBrowserModel<E> {
 		 * calling derivePagination will automatically compute for the number
 		 * of page numbers the filtered data needs
 		 */
-		derivePagination();
+		derivePagination(getDataSourceRowCount());
 		
 		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_FILTER_KEY, oldVal, key);
 	}
@@ -257,6 +274,12 @@ public class DataBrowserModel<E> {
 		sortType = type;
 		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_SORT_ORDER, oldVal, order);
 	}
+	
+	public void setApplicationLoading(boolean bool) {
+		boolean oldVal = applicationLoading;
+		applicationLoading = bool;
+		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_APPLICATION_LOADING, oldVal, bool);
+	}
 
 	public void addModelListener(PropertyChangeListener prop) {
 		propChangeFirer.addPropertyChangeListener(prop);
@@ -264,13 +287,12 @@ public class DataBrowserModel<E> {
 	
 	/* This method is for adjusting the pagination when the query changes.
 	 */
-	private void derivePagination(){
+	private void derivePagination(int srcSize){
 		Pagination p = new Pagination();
 		p.setCurrentPageNum(Pagination.FIRST_PAGE);
 		p.setMaxExposableCount(10);
-		p.setItemsPerPage(10);
+		p.setItemsPerPage(1000);
 
-		int srcSize = getDataSourceRowCount();
 		int itemsPerPage = p.getItemsPerPage();
 		int pageCountForEvenSize = (srcSize / itemsPerPage);
 		int totalPageCount = (srcSize % itemsPerPage) == 0 ? pageCountForEvenSize : pageCountForEvenSize + 1; 

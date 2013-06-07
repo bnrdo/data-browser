@@ -79,7 +79,8 @@ public class DataBrowserSampleUsage {
 	}
 	public List<Person> generateRandomSource(){
 		Random r = new Random();
-		int num = r.nextInt(1000);
+		int num = 100000;//r.nextInt(1000);
+		int ctr = 0;
 		System.out.println("Generating " + num + " rows...");
 		List<Person> retVal = new ArrayList<Person>();
 		for (int i = 1; i <= num; i++) {
@@ -95,12 +96,14 @@ public class DataBrowserSampleUsage {
 				result =  df.parse(target);
 			} catch (ParseException e) {
 				e.printStackTrace();
-			}  
+			} 
 			p.setBirthDay(new Date());
 			
 			p.setOccupation("Occupation" + i);
 			p.setAge(i);
 			retVal.add(p);
+			ctr++;
+			System.out.println(ctr + " added.");
 		}
 		return retVal;
 	}

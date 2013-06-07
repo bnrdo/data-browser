@@ -15,5 +15,6 @@ public class Constants{
 		public static final String FN_PAGINATION = "pagination";
 		public static final String FN_SORT_ORDER = "sortOrder";
 		public static final String FN_FILTER_KEY = "filterKey";
+		public static final String FN_APPLICATION_LOADING = "applicationLoading";
 	}
 }

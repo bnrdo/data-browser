@@ -21,16 +21,16 @@ import com.bnrdo.databrowser.comparator.StringComparator;
 public class DBroUtil {
 	
 	public static Connection getConnection(){
-		Connection con = null;
+		Connection cons = null;
 		try {
 			Class.forName("org.hsqldb.jdbcDriver");
-			con = DriverManager.getConnection("jdbc:hsqldb:mem:data-browser", "sa", "");
+			cons = DriverManager.getConnection("jdbc:hsqldb:mem:data-browser", "sa", "");
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}  catch(SQLException e){
 			e.printStackTrace();
 		}
-		return con;
+		return cons;
 	}
 	public static <E> Object[] convertPojoToObjectArray(E domain, List<String> propNamesToPut){
 		Object[] retVal = new Object[propNamesToPut.size()];
@@ -90,9 +90,8 @@ public class DBroUtil {
     		bdr.append("INSERT INTO data_browser_persist VALUES ('");
     		for(int i = 0; i < fmt.getColumnCount(); i++){
     			bdr.append(fmt.getValueAt(i, e)).append("', '");
-    			System.out.print(fmt.getValueAt(i, e) + " ");
+    			//System.out.print(fmt.getValueAt(i, e) + " ");
     		}
-    		System.out.println();
     		bdr.replace(bdr.length()-3, bdr.length(), "");
     		bdr.append(")");
     		

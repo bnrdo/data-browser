@@ -16,6 +16,7 @@ import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 
+import com.bnrdo.databrowser.AppStat;
 import com.bnrdo.databrowser.ColumnInfoMap;
 import com.bnrdo.databrowser.Constants;
 import com.bnrdo.databrowser.DBroUtil;
@@ -222,7 +223,21 @@ public class DataBrowserController<E> implements ModelListener {
 		String propName = evt.getPropertyName();
 		
 		
-		if (Constants.ModelFields.FN_DATA_TABLE_SOURCE_EXPOSED.equalsIgnoreCase(propName)) {
+		if(Constants.ModelFields.FN_APPLICATION_LOADING.equalsIgnoreCase(propName)){
+			boolean newVal = (Boolean) evt.getNewValue();
+			
+			if(newVal == true){
+				//show loading screen
+			}else{
+				//hide loading screen
+				Pagination p = model.getPagination();
+				PageButton[] btns = view.getPageBtns();
+				if(btns.length > 0){
+					int index = DBroUtil.getIndexOfNumFromArray(p.getPageNumsExposed(), p.getCurrentPageNum()); 
+					btns[index].doClick();
+				}
+			}
+		}else if (Constants.ModelFields.FN_DATA_TABLE_SOURCE_EXPOSED.equalsIgnoreCase(propName)) {
 			setupDataTableInView(view.getDataTable(), 
 								model.getColInfoMap(), 
 								model.getTableDataSourceFormat());
@@ -231,11 +246,6 @@ public class DataBrowserController<E> implements ModelListener {
 			setupPageNumbersInView(p.getPageNumsExposed());
 			
 			// pagebtns array will be populated after executing setupPageNumbersInView
-			PageButton[] btns = view.getPageBtns();
-			if(btns.length > 0){
-				int index = DBroUtil.getIndexOfNumFromArray(p.getPageNumsExposed(), p.getCurrentPageNum()); 
-				btns[index].doClick();
-			}
 		}else if(Constants.ModelFields.FN_SORT_ORDER.equalsIgnoreCase(propName)){
 			Pagination p = model.getPagination();
 			PageButton[] btns = view.getPageBtns();
