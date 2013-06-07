@@ -5,12 +5,14 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.beans.PropertyChangeEvent;
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.AbstractAction;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.SwingWorker;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumn;
@@ -186,11 +188,44 @@ public class DataBrowserController<E> implements ModelListener {
 		int itemsPerPage = p.getItemsPerPage();
 		int itemCount = model.getDataSourceRowCount();
 		int lastItem = p.getCurrentPageNum() * itemsPerPage;
-		int from = lastItem - itemsPerPage;
-		int to = (lastItem > (itemCount)) ? itemCount : lastItem;
 		
-		model.setDataTableSourceExposed(model.getScrolledSource(from, to));
+		final int from = lastItem - itemsPerPage;
+		final int to = (lastItem > (itemCount)) ? itemCount : lastItem;
+		
+		new SwingWorker<Void, String>() {
+			List<E> scrollSrc = null;
+			boolean loaded;
+			
+	        @Override
+	        protected Void doInBackground() throws Exception {
+	        	loaded = false;
+	        	
+	        	while(!loaded){
+	        		
+		        	try{
+						scrollSrc = model.getScrolledSource(from, to);
+						loaded = true;
+						break;
+					}catch(ModelException e){
+						System.out.println("message : ");
+						e.printStackTrace();
+					}
+					try{
+						Thread.sleep(1000);
+					}catch(InterruptedException e){
+						//e.printStackTrace();
+					}
+	        	}
+				return null;
+	        }
+	        
+	        @Override
+	        protected void done() {
+	        	model.setDataTableSourceExposed(scrollSrc);
+	        }
+	    }.execute();
 	}
+	
 	
 	private void changeCurrentPageNum(int newVal) {
 		PageButton[] btns = view.getPageBtns();

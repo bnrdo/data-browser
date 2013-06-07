@@ -90,9 +90,9 @@ public class DBroUtil {
     		bdr.append("INSERT INTO data_browser_persist VALUES ('");
     		for(int i = 0; i < fmt.getColumnCount(); i++){
     			bdr.append(fmt.getValueAt(i, e)).append("', '");
-    			System.out.print(fmt.getValueAt(i, e) + " ");
+    			//System.out.print(fmt.getValueAt(i, e) + " ");
     		}
-    		System.out.println();
+    		//System.out.println();
     		bdr.replace(bdr.length()-3, bdr.length(), "");
     		bdr.append(")");
     		
