@@ -51,7 +51,8 @@ public class Pagination {
 		//if the called when the datasource is newly set reset the page nums exposed to the initial one. else
 		//preserve the old page nums exposed (works perfectly in sorting)
 		if(getCurrentPageNum() == 1){
-			setPageNumsExposed(ArrayUtils.subarray(pageNumsRaw, 0, maxExposableCount));
+			int[] arr = ArrayUtils.subarray(pageNumsRaw, 0, maxExposableCount);
+			setPageNumsExposed(arr);
 		}
 	}
 
@@ -67,6 +68,11 @@ public class Pagination {
 		return maxExposableCount;
 	}
 
+	/* this should be used by the client for hooking in the pagination 
+	 * event of the databrowser. This is not used inside the databrowser. The usual
+	 * ActionListener for button is used instead for managing the cosmetic changes
+	 * when navigating through buttons, changing the exposed rows, etc.
+	 */
 	public void addPaginationListener(String id, PaginationListener p) {
 		paginationListeners.put(id, p);
 	}

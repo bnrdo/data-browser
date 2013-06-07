@@ -83,10 +83,9 @@ public class DBroUtil {
 		}
 	}
 	
-	public static <E> int populateTable(Statement stmt, List<E> source, TableDataSourceFormat<E> fmt) throws SQLException{
-		int rowsInserted = 0;
-		
-    	for(E e : source){
+	public static <E> void populateTable(Statement stmt, List<E> source, TableDataSourceFormat<E> fmt) throws SQLException{
+		int countForLog = 0;
+		for(E e : source){
     		StringBuilder bdr = new StringBuilder();
     		bdr.append("INSERT INTO data_browser_persist VALUES ('");
     		for(int i = 0; i < fmt.getColumnCount(); i++){
@@ -98,10 +97,9 @@ public class DBroUtil {
     		bdr.append(")");
     		
     		stmt.executeUpdate(bdr.toString());
-    		rowsInserted++;
+    		countForLog++;
     	}
-    	
-    	return rowsInserted;
+		System.out.println(countForLog + " rows succesfully inserted!");
     }
 	
 	public static String getSortQryChunk(String sortCol, SORT_ORDER sortOrder, SQL_TYPE sortType){

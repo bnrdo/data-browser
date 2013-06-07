@@ -26,6 +26,7 @@ public class DataBrowserView {
 
     private JTextField txtSearch;
     private JComboBox cboSearch;
+    private JButton btnSearch;
     private JTable tblData;
     
     private JButton testButton;
@@ -73,7 +74,7 @@ public class DataBrowserView {
         JPanel retVal = new JPanel(new BorderLayout()) {
             @Override
             public Dimension getPreferredSize() {
-                return new Dimension(500, 500);
+                return new Dimension(700, 500);
             }
         };
 
@@ -85,22 +86,23 @@ public class DataBrowserView {
         return retVal;
     }
     
-    private JPanel createPagePanel(){
+    @SuppressWarnings("serial")
+	private JPanel createPagePanel(){
     	return new JPanel(new BorderLayout()) {
             @Override
             public Dimension getPreferredSize() {
-                return new Dimension(250, 20);
+                return new Dimension(350, 20);
             }
         };
     }
     
-    @SuppressWarnings("serial")
     public void createPageButtons(int[] pageNums) {
     	if (pnlPage.getComponentCount() > 0) {
     		pnlPage.remove(0);
     	}
     	
     	JPanel pageHandle = new JPanel();
+    	
     	pageHandle.setLayout(new BoxLayout(pageHandle, BoxLayout.LINE_AXIS));
     	pageHandle.add(Box.createHorizontalGlue());
     	
@@ -135,6 +137,7 @@ public class DataBrowserView {
         }
     	
     	pnlPage.add(pageHandle);
+    	pnlPage.repaint();
     }
 
     @SuppressWarnings("serial")
@@ -142,7 +145,7 @@ public class DataBrowserView {
         JPanel retVal = new JPanel() {
             @Override
             public Dimension getPreferredSize() {
-                return new Dimension(250, 30);
+                return new Dimension(350, 30);
             }
         };
 
@@ -162,6 +165,12 @@ public class DataBrowserView {
                 return new Dimension(getPreferredSize().width, 20);
             }
         };
+        btnSearch = new JButton(){
+        	@Override
+            public Dimension getMaximumSize() {
+                return new Dimension(getPreferredSize().width, 20);
+            }
+        };
 
         retVal.add(Box.createRigidArea(new Dimension(10, 10)));
         retVal.add(lblSearch);
@@ -169,7 +178,9 @@ public class DataBrowserView {
         retVal.add(txtSearch);
         retVal.add(Box.createRigidArea(new Dimension(5, 10)));
         retVal.add(cboSearch);
-
+        retVal.add(Box.createRigidArea(new Dimension(5, 10)));
+        retVal.add(btnSearch);
+        
         return retVal;
     }
     
@@ -187,6 +198,10 @@ public class DataBrowserView {
 
     public JComboBox getCboSearch() {
         return cboSearch;
+    }
+    
+    public JButton getBtnSearch(){
+    	return btnSearch;
     }
 
     public PageButton [] getPageBtns() {
