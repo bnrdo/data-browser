@@ -1,7 +1,6 @@
 package com.bnrdo.databrowser;
 
 import java.awt.Component;
-import java.awt.Cursor;
 import java.awt.Insets;
 
 import javax.swing.JButton;

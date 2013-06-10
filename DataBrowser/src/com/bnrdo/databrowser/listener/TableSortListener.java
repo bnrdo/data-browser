@@ -3,6 +3,7 @@ package com.bnrdo.databrowser.listener;
 import java.awt.Cursor;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionListener;
 
 import javax.swing.JTable;
 import javax.swing.table.JTableHeader;
@@ -27,9 +28,18 @@ public class TableSortListener<E> extends MouseAdapter{
 	public void mouseReleased(MouseEvent e) {
 		JTableHeader header = table.getTableHeader();
 		Cursor cursor = header.getCursor();
+		boolean isSortableAccdgToPushableListener = true;
+		
+		for(MouseMotionListener listen : header.getMouseMotionListeners()){
+			if(listen instanceof PushableTableHeaderListener){
+				isSortableAccdgToPushableListener = ((PushableTableHeaderListener)listen).isSortable();
+				System.out.println("isSortableAccdgToPushableListener : " + isSortableAccdgToPushableListener );
+				break;
+			}
+		}
 		
 		if(cursor.getType() == Cursor.E_RESIZE_CURSOR ||
-				AppStat.IS_SORTABLE == false)
+				isSortableAccdgToPushableListener == false)
 			return;
 		
 		int selIndex = table.convertColumnIndexToModel(table.columnAtPoint(e.getPoint()));

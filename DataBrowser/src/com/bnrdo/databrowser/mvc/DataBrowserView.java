@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.event.MouseListener;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -12,18 +13,21 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.table.JTableHeader;
+
+import com.bnrdo.databrowser.listener.PushableTableHeaderListener;
+import com.bnrdo.databrowser.listener.TableSortListener;
 
 public class DataBrowserView {
     private JPanel pnlMain;
     private JPanel pnlPage;
     private JPanel pnlSearch;
     private JPanel pnlTable;
-
+    
     private JTextField txtSearch;
     private JComboBox cboSearch;
     private JButton btnSearch;
@@ -74,7 +78,7 @@ public class DataBrowserView {
         JPanel retVal = new JPanel(new BorderLayout()) {
             @Override
             public Dimension getPreferredSize() {
-                return new Dimension(700, 500);
+                return new Dimension(700, 300);
             }
         };
 
@@ -82,7 +86,7 @@ public class DataBrowserView {
         tblData.setVisible(false);
         
         JScrollPane pane = new JScrollPane(tblData);
-        retVal.add(pane);
+        retVal.add(pane, BorderLayout.CENTER);
         return retVal;
     }
     
@@ -223,7 +227,54 @@ public class DataBrowserView {
     public PageButton getBtnLast() {
         return btnLast;
     }
+    
+    public void showTableLoader(){
+    	txtSearch.setEnabled(false);
+    	btnSearch.setEnabled(false);
+    	cboSearch.setEnabled(false);
+    	
+    	tblData.setRowSelectionAllowed(false);
+    	tblData.setColumnSelectionAllowed(false);
+    	
+    	
+    	JTableHeader header = tblData.getTableHeader();
+    	header.setReorderingAllowed(false);
+    	header.setResizingAllowed(false);
+    	
+    	//remove listener if already existing
+		for(MouseListener ms : header.getMouseListeners()){
+			if(ms instanceof PushableTableHeaderListener ||
+					ms instanceof TableSortListener){
+				header.removeMouseListener(ms);
+			}
+		}
+    	
+    	tblData.clearSelection();
+    	tblData.setEnabled(false);
+    	tblData.setForeground(Color.LIGHT_GRAY);
+    	
+    	for(PageButton btns : pageBtns){
+    		btns.setEnabled(false);
+    	}
+    }
 
+    public void hideTableLoader(){
+    	txtSearch.setEnabled(true);
+    	btnSearch.setEnabled(true);
+    	cboSearch.setEnabled(true);
+    	
+    	tblData.setRowSelectionAllowed(true);
+    	tblData.setColumnSelectionAllowed(true);
+    	tblData.getTableHeader().setReorderingAllowed(true);
+    	tblData.getTableHeader().setResizingAllowed(true);
+    	tblData.setEnabled(true);
+    	tblData.setForeground(Color.BLACK);
+    	
+    	for(PageButton btns : pageBtns){
+    		btns.setEnabled(true);
+    	}
+    }
+    
     @SuppressWarnings("serial")
 	class PageButton extends JButton {
         private boolean selected;

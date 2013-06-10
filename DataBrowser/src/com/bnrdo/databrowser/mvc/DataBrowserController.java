@@ -121,7 +121,7 @@ public class DataBrowserController<E> implements ModelListener {
 		}
 		
 		header.addMouseListener(ptListen);
-		header.addMouseMotionListener(new PushableTableHeaderListener(header, renderer));
+		header.addMouseMotionListener(ptListen);
 		header.addMouseListener(new TableSortListener<E>(tbl, model));
 	}
 
@@ -170,7 +170,7 @@ public class DataBrowserController<E> implements ModelListener {
 	}
 
 	private void pageButtonIsClicked(Object where){
-		Pagination p = model.getPagination();
+		final Pagination p = model.getPagination();
 		
 		if(where instanceof Integer){
 			p.setCurrentPageNum((Integer)where);
@@ -184,34 +184,43 @@ public class DataBrowserController<E> implements ModelListener {
 		setupPageNumbersInView(p.getPageNumsExposed());
 		changeCurrentPageNum(p.getCurrentPageNum());
 		
-		//computation for offset and limit of sql query
-		int itemsPerPage = p.getItemsPerPage();
-		int itemCount = model.getDataSourceRowCount();
-		int lastItem = p.getCurrentPageNum() * itemsPerPage;
-		
-		final int from = lastItem - itemsPerPage;
-		final int to = (lastItem > (itemCount)) ? itemCount : lastItem;
-		
 		new SwingWorker<Void, String>() {
-			List<E> scrollSrc = null;
+			List<E> scrolledSrc = null;
 			boolean loaded;
 			
 	        @Override
 	        protected Void doInBackground() throws Exception {
 	        	loaded = false;
+	        	model.setDataForTableLoading(true);
 	        	
+	        	/* the scrollSrc.size() == 0 condition is in case the data is already fetch while an
+	        	 * insert to the persistent storage is not yet done. its a race between inserting data to
+	        	 * the db and query the db.
+	        	 */
 	        	while(!loaded){
-	        		
 		        	try{
-						scrollSrc = model.getScrolledSource(from, to);
-						loaded = true;
-						break;
+		        		//computation for offset and limit of sql query
+		        		int itemsPerPage = p.getItemsPerPage();
+		        		int itemCount = 10000;
+		        		int lastItem = p.getCurrentPageNum() * itemsPerPage;
+		        		
+		        		final int from = lastItem - itemsPerPage;
+		        		final int to = (lastItem > (itemCount)) ? itemCount : lastItem;
+		        		
+		        		System.out.println("items per page : " + itemsPerPage);
+		        		System.out.println("item count : " + itemCount);
+		        		System.out.println("last item : " + lastItem);
+		        		System.out.println("from : " + from);
+		        		System.out.println("to : " + to);
+		        		
+						scrolledSrc = model.getScrolledSource(from, to);
+						loaded = true; break;
 					}catch(ModelException e){
-						System.out.println("message : ");
-						e.printStackTrace();
+						System.out.println("Model is not yet ready. Attempting to request again...");
 					}
+		        	
 					try{
-						Thread.sleep(1000);
+						Thread.sleep(100);
 					}catch(InterruptedException e){
 						//e.printStackTrace();
 					}
@@ -221,7 +230,8 @@ public class DataBrowserController<E> implements ModelListener {
 	        
 	        @Override
 	        protected void done() {
-	        	model.setDataTableSourceExposed(scrollSrc);
+	        	model.setDataTableSourceExposed(scrolledSrc);
+	        	model.setDataForTableLoading(false);
 	        }
 	    }.execute();
 	}
@@ -276,8 +286,7 @@ public class DataBrowserController<E> implements ModelListener {
 			PageButton[] btns = view.getPageBtns();
 			
 			if(btns.length > 0){
-				int index = DBroUtil.getIndexOfNumFromArray(p.getPageNumsExposed(), p.getCurrentPageNum()); 
-				btns[index].doClick();
+				pageButtonIsClicked(p.getCurrentPageNum());
 			}
 		}else if(Constants.ModelFields.FN_FILTER_KEY.equalsIgnoreCase(propName)){
 			PageButton[] btns = view.getPageBtns();
@@ -285,11 +294,16 @@ public class DataBrowserController<E> implements ModelListener {
 			if(btns.length == 0){
 				model.setDataTableSourceExposed(new ArrayList<E>());
 			}else{
-				int index = 0; 
-				btns[index].doClick();
+				pageButtonIsClicked(1);
 			}
 		}else if(Constants.ModelFields.FN_COL_INFO_MAP.equalsIgnoreCase(propName)){
 			setupFilterCategoryInView();
+		}else if(Constants.ModelFields.FN_IS_TABLE_LOADING.equalsIgnoreCase(propName)){
+			boolean newVal = (Boolean) evt.getNewValue();
+			
+			if(newVal == true) view.showTableLoader();
+			else view.hideTableLoader();
+			
 		}
 		
 		//the following fragments should also be put in place ok.

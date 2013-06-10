@@ -4,13 +4,9 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import com.bnrdo.databrowser.Constants.SORT_ORDER;
 import com.bnrdo.databrowser.Constants.SQL_TYPE;
@@ -25,6 +21,8 @@ public class DBroUtil {
 		try {
 			Class.forName("org.hsqldb.jdbcDriver");
 			con = DriverManager.getConnection("jdbc:hsqldb:mem:data-browser", "sa", "");
+			//con = DriverManager.getConnection("jdbc:hsqldb:file:C:\\Users\\ut1p98\\Desktop\\db\\data-browser", "sa", "");
+			//con = DriverManager.getConnection("jdbc:hsqldb:file:C:\\Users\\ut1p98\\Desktop\\db\\data-browser", "sa", "");
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		}  catch(SQLException e){
@@ -83,25 +81,61 @@ public class DBroUtil {
 		}
 	}
 	
+	/*
+	public static <E> void populateTable(Connection con, List<E> source, TableDataSourceFormat<E> fmt) throws SQLException{
+		/*int countForLog = 0;
+		
+		StringBuilder bdr = new StringBuilder();
+		bdr.append("INSERT INTO data_browser_persist VALUES (");
+		for(int i = 0; i < fmt.getColumnCount(); i++){
+			bdr.append("?, ");
+		}
+		bdr.replace(bdr.length()-2, bdr.length(), "");
+		bdr.append(")");
+		
+		PreparedStatement pStmt = con.prepareStatement(bdr.toString());;
+		
+		for(E e : source){
+			for(int i = 0; i < fmt.getColumnCount(); i++){
+				pStmt.setString(i+1, fmt.getValueAt(i, e));
+			}
+			pStmt.addBatch();
+			if(countForLog % 1000 == 2 || countForLog == source.size()){
+				pStmt.executeBatch();
+			}
+    		countForLog++;
+    	}
+		con.commit();
+		System.out.println(countForLog + " rows succesfully inserted!");
+    }
+	*/
 	public static <E> void populateTable(Statement stmt, List<E> source, TableDataSourceFormat<E> fmt) throws SQLException{
 		int countForLog = 0;
+		StringBuilder bdr = new StringBuilder();
+		bdr.append("INSERT INTO data_browser_persist VALUES ");
+		
 		for(E e : source){
-    		StringBuilder bdr = new StringBuilder();
-    		bdr.append("INSERT INTO data_browser_persist VALUES ('");
+			bdr.append("(");
     		for(int i = 0; i < fmt.getColumnCount(); i++){
-    			bdr.append(fmt.getValueAt(i, e)).append("', '");
+    			bdr.append("'").append(fmt.getValueAt(i, e)).append("', ");
     			//System.out.print(fmt.getValueAt(i, e) + " ");
     		}
     		//System.out.println();
-    		bdr.replace(bdr.length()-3, bdr.length(), "");
-    		bdr.append(")");
+    		bdr.replace(bdr.length()-2, bdr.length(), "");
+    		bdr.append("), ");
     		
-    		stmt.executeUpdate(bdr.toString());
     		countForLog++;
+    		
+    		if(countForLog % 1000 == 0 || countForLog == source.size()){
+    			bdr.replace(bdr.length()-2, bdr.length(), "");
+    			stmt.executeUpdate(bdr.toString());
+    			bdr = new StringBuilder();
+    			bdr.append("INSERT INTO data_browser_persist VALUES ");
+    		}
     	}
 		System.out.println(countForLog + " rows succesfully inserted!");
     }
-	
+
 	public static String getSortQryChunk(String sortCol, SORT_ORDER sortOrder, SQL_TYPE sortType){
 		StringBuilder retVal = new StringBuilder();
 		retVal.append("ORDER BY "); 
@@ -133,7 +167,7 @@ public class DBroUtil {
     	StringBuilder retVal = new StringBuilder();
     	boolean primarySet = false;
     	
-    	retVal.append("CREATE MEMORY TABLE data_browser_persist ( ");
+    	retVal.append("CREATE CACHED TABLE data_browser_persist ( ");
     	
     	for(Integer i : colInfoMap.getKeySet()){
     		if(colInfoMap.hasIndex(i)){

@@ -79,7 +79,7 @@ public class DataBrowserSampleUsage {
 	}
 	public List<Person> generateRandomSource(){
 		Random r = new Random();
-		int num = 100000;//r.nextInt(1000);
+		int num = 10000;//r.nextInt(1000);
 		System.out.println("Generating " + num + " rows...");
 		List<Person> retVal = new ArrayList<Person>();
 		for (int i = 1; i <= num; i++) {

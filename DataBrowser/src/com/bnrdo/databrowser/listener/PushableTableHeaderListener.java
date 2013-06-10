@@ -14,10 +14,12 @@ import com.bnrdo.databrowser.PushableTableHeaderRenderer;
 public class PushableTableHeaderListener extends MouseAdapter{
 	private JTableHeader header;
 	private PushableTableHeaderRenderer renderer;
+	private boolean isSortable;
 
 	public PushableTableHeaderListener(JTableHeader header, PushableTableHeaderRenderer renderer) {
 		this.header = header;
 		this.renderer = renderer;
+		isSortable = true;
 	} 
 
 	public void mousePressed(MouseEvent e) {
@@ -26,7 +28,7 @@ public class PushableTableHeaderListener extends MouseAdapter{
 		if(cursor.getType() == Cursor.E_RESIZE_CURSOR)
 			return;
 		
-		AppStat.IS_SORTABLE = true;
+		isSortable = true;
 		
 		int col = header.columnAtPoint(e.getPoint());
 		renderer.setPressedColumn(col);
@@ -34,15 +36,18 @@ public class PushableTableHeaderListener extends MouseAdapter{
 	}
 
 	public void mouseReleased(MouseEvent e) {
-		int col = header.columnAtPoint(e.getPoint());
 		renderer.setPressedColumn(-1); // clear
 		header.repaint();
 	}
 	
 	public void mouseDragged(MouseEvent arg0) {
-		AppStat.IS_SORTABLE = false;
+		isSortable = false;
 		
 		renderer.setPressedColumn(-1);
 		header.repaint();
+	}
+	
+	public boolean isSortable(){
+		return isSortable;
 	}
 }

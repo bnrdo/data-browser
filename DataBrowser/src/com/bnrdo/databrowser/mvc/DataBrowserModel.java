@@ -35,22 +35,26 @@ public class DataBrowserModel<E> {
 	private String sortCol;
 	private String filterCol;
 	private String filterKey;
+	
 	private int dataSourceRowCount;
 	private int recordLimit;
 	private int recordOffset;
+	
+	private boolean isDataForTableLoading;
 
 	private String QRY_TEMPLATE = "SELECT * FROM data_browser_persist "
 			+ "WHERE filter_col like 'filter_key%' "
 			+ "ORDER BY CAST(col_name AS sort_type) sort_order "
 			+ "LIMIT limit_count " + "OFFSET offset_count";
 	
-	private String QRY_RECORD_COUND = "SELECT COUNT(*) FROM data_browser_persist WHERE filter_col like 'filter_key%'";
+	private String QRY_RECORD_COUNT = "SELECT COUNT(*) FROM data_browser_persist WHERE filter_col like 'filter_key%'";
 
 	public DataBrowserModel() {
 		propChangeFirer = new SwingPropertyChangeSupport(this);
 		dataSourceRowCount = 0;
 		recordLimit = 0;
 		recordOffset = 0;
+		isDataForTableLoading = false;
 	}
 
 	public void setPagination(Pagination p) {
@@ -69,32 +73,27 @@ public class DataBrowserModel<E> {
 			throw new ModelException("Table data source format should be supplied before setting the data source..");
 		}
 		
-		AppStat.IS_TABLE_CREATED = false;
-
 		new SwingWorker<Void, E>() {
 	        @Override
 	        protected Void doInBackground() throws Exception {
 	        	Connection conn = null;
-	    		Statement statement = null;
+	    		Statement stmt = null;
 	    		
 	        	try {
 	    			conn = DBroUtil.getConnection();
-	    			statement = conn.createStatement();
-
+	    			stmt = conn.createStatement();
 	    			// table name = data_browser_persist
-	    			statement.execute("DROP TABLE IF EXISTS DATA_BROWSER_PERSIST;");
-	    			statement.execute("SET IGNORECASE TRUE;");
-	    			statement.execute(DBroUtil.translateColInfoMapToCreateDbQuery(colInfoMap));
-
-	    			AppStat.IS_TABLE_CREATED = true;
+	    			stmt.execute("DROP TABLE IF EXISTS DATA_BROWSER_PERSIST;");
+	    			stmt.execute("SET IGNORECASE TRUE;");
+	    			stmt.execute(DBroUtil.translateColInfoMapToCreateDbQuery(colInfoMap));
 	    			
-	    			DBroUtil.populateTable(statement, list, tableDataSourceFormat);
+	    			DBroUtil.populateTable(stmt, list, tableDataSourceFormat);
 	    			
 	    		} catch (Exception e) {
 	    			e.printStackTrace();
 	    		} finally {
 	    			try {
-	    				statement.close();
+	    				stmt.close();
 	    				conn.close();
 	    			} catch (Exception e) {
 	    				e.printStackTrace();
@@ -111,24 +110,19 @@ public class DataBrowserModel<E> {
 	    }.execute();
 		/* default values for sorting and filter
 		 */
-		sortCol = colInfoMap.getPropertyName(0);
+		sortCol = colInfoMap.getPropertyName(3);
 		sortOrder = SORT_ORDER.ASC;
-		sortType = colInfoMap.getPropertyType(0);
+		sortType = colInfoMap.getPropertyType(3);
 	
 		filterCol = colInfoMap.getPropertyName(0);
 		filterKey = "";
 		
-		// realize the pagination info after setting the base datasource.
-		while(AppStat.IS_TABLE_CREATED != true){
-			
-		}
-		
 		derivePagination(list.size());
 	}
 	
-	public int getDataSourceRowCount() {
+	public int getDataSourceRowCount() throws ModelException{
 		
-		String qryCount = QRY_RECORD_COUND;
+		String qryCount = QRY_RECORD_COUNT;
 		
 		qryCount = qryCount.replace("filter_col", filterCol)
 							.replace("filter_key", filterKey);
@@ -143,8 +137,9 @@ public class DataBrowserModel<E> {
 				dataSourceRowCount = (int) rs.getLong(1);
 				System.out.println("Data source count is : " + dataSourceRowCount);
 			}
-		} catch (SQLException e) {
-			e.printStackTrace();
+		} catch (Exception e) {
+			System.out.println(e.toString());
+			throw new ModelException(e.toString());
 		}
 		
 		System.out.println("query count is : " + qryCount);
@@ -169,7 +164,7 @@ public class DataBrowserModel<E> {
 	 * sql LIMIT and OFFSET to be applied in the query.
 	 * Filter and sort are also applied in the query.
 	 */
-	public List<E> getScrolledSource(int from, int to) throws ModelException{
+	public List<E> getScrolledSource(int from, int to) throws ModelException, SQLException{
 		List<E> retVal = new ArrayList<E>();
 
 		Connection conn = null;
@@ -214,6 +209,7 @@ public class DataBrowserModel<E> {
 			}
 			
 		} catch (Exception e) {
+			System.out.println(e.toString());
 			throw new ModelException(e.toString());
 		} finally {
 			try {
@@ -232,6 +228,12 @@ public class DataBrowserModel<E> {
 		List<E> oldVal = dataTableSourceExposed;
 		dataTableSourceExposed = list;
 		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_DATA_TABLE_SOURCE_EXPOSED, oldVal, list);
+	}
+	
+	public void setDataForTableLoading(boolean bool) {
+		boolean oldVal = isDataForTableLoading;
+		isDataForTableLoading = bool;
+		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_IS_TABLE_LOADING, oldVal, bool);
 	}
 
 	public List<E> getDataTableSourceExposed() {
@@ -288,8 +290,8 @@ public class DataBrowserModel<E> {
 	private void derivePagination(int srcSize){
 		Pagination p = new Pagination();
 		p.setCurrentPageNum(Pagination.FIRST_PAGE);
-		p.setMaxExposableCount(10);
-		p.setItemsPerPage(10);
+		p.setMaxExposableCount(7);
+		p.setItemsPerPage(10000);
 
 		int itemsPerPage = p.getItemsPerPage();
 		int pageCountForEvenSize = (srcSize / itemsPerPage);
