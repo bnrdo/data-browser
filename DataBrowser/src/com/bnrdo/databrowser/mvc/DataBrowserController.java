@@ -123,6 +123,8 @@ public class DataBrowserController<E> implements ModelListener {
 		header.addMouseListener(ptListen);
 		header.addMouseMotionListener(ptListen);
 		header.addMouseListener(new TableSortListener<E>(tbl, model));
+		
+		tbl.repaint();
 	}
 
 	@SuppressWarnings("serial")
@@ -201,7 +203,7 @@ public class DataBrowserController<E> implements ModelListener {
 		        	try{
 		        		//computation for offset and limit of sql query
 		        		int itemsPerPage = p.getItemsPerPage();
-		        		int itemCount = 10000;
+		        		int itemCount = model.getDataSourceRowCount();
 		        		int lastItem = p.getCurrentPageNum() * itemsPerPage;
 		        		
 		        		final int from = lastItem - itemsPerPage;
@@ -220,7 +222,7 @@ public class DataBrowserController<E> implements ModelListener {
 					}
 		        	
 					try{
-						Thread.sleep(100);
+						Thread.sleep(1000);
 					}catch(InterruptedException e){
 						//e.printStackTrace();
 					}

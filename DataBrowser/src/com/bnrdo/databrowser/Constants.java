@@ -2,7 +2,7 @@ package com.bnrdo.databrowser;
 
 public class Constants{
 	public enum SQL_TYPE {
-		STRING, INTEGER, BIGDECIMAL, TIMESTAMP, BOOLEAN;
+		STRING, INTEGER, BIGDECIMAL, TIMESTAMP, BOOLEAN, NUMBER, VARCHAR2, FLOAT;
 	}
 	public enum SORT_ORDER{
 		ASC, DESC;

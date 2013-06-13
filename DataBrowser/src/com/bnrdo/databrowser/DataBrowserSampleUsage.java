@@ -16,10 +16,11 @@ import javax.swing.UIManager;
 import com.bnrdo.databrowser.Constants.SQL_TYPE;
 import com.bnrdo.databrowser.DataBrowser;
 import com.bnrdo.databrowser.domain.Person;
+import com.bnrdo.databrowser.format.PersonFormat;
 
 public class DataBrowserSampleUsage {
 	public static void main(String[] args) {
-		SwingUtilities.invokeLater(new Runnable() {
+		/*SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
 				try {
 					//UIManager.setLookAndFeel("com.jgoodies.looks.plastic.PlasticXPLookAndFeel");
@@ -37,7 +38,7 @@ public class DataBrowserSampleUsage {
 				frame.pack();
 				frame.setVisible(true);
 			}
-		});
+		});*/
 	}
 	
 	private DataBrowser<Person> createDataBrowser() {

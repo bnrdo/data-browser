@@ -50,6 +50,38 @@ public class DBroUtil {
 		return retVal;
 	}
 	
+	public static Integer toInt(String s){
+		try{
+			return Integer.parseInt(s);
+		}catch(Exception e){
+			return new Integer(0);
+		}
+	}
+	
+	public static Double toDouble(String s){
+		try{
+			return Double.parseDouble(s);
+		}catch(Exception e){
+			return new Double(0);
+		}
+	}
+	
+	public static Float toFloat(String s){
+		try{
+			return Float.parseFloat(s);
+		}catch(Exception e){
+			return new Float(0);
+		}
+	}
+	
+	public static Long toLong(String s){
+		try{
+			return Long.parseLong(s);
+		}catch(Exception e){
+			return new Long(0);
+		}
+	}
+	
 	public static <E> Object[] extractRowFromFormat(TableDataSourceFormat<E> fmt, E e){
 		int colCount= fmt.getColumnCount();
 		Object[] retVal= new Object[colCount];
@@ -109,6 +141,17 @@ public class DBroUtil {
 		System.out.println(countForLog + " rows succesfully inserted!");
     }
 	*/
+	public static String makeCSVFromArray(String[] arr){
+		StringBuilder bdr = new StringBuilder();
+		
+		for(String s : arr){
+			bdr.append(s).append(", ");
+		}
+		
+		bdr.replace(bdr.length()-2, bdr.length(), "");
+		
+		return bdr.toString();
+	}
 	public static <E> void populateTable(Statement stmt, List<E> source, TableDataSourceFormat<E> fmt) throws SQLException{
 		int countForLog = 0;
 		StringBuilder bdr = new StringBuilder();
@@ -132,6 +175,7 @@ public class DBroUtil {
     			bdr = new StringBuilder();
     			bdr.append("INSERT INTO data_browser_persist VALUES ");
     		}
+    		source.remove(e);
     	}
 		System.out.println(countForLog + " rows succesfully inserted!");
     }

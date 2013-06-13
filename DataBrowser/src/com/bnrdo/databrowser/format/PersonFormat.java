@@ -1,4 +1,4 @@
-package com.bnrdo.databrowser;
+package com.bnrdo.databrowser.format;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -6,6 +6,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+import com.bnrdo.databrowser.TableDataSourceFormat;
 import com.bnrdo.databrowser.domain.Person;
 
 public class PersonFormat implements TableDataSourceFormat<Person>{

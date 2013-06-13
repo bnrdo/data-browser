@@ -42,12 +42,10 @@ public class DataBrowserModel<E> {
 	
 	private boolean isDataForTableLoading;
 
-	private String QRY_TEMPLATE = "SELECT * FROM data_browser_persist "
-			+ "WHERE filter_col like 'filter_key%' "
-			+ "ORDER BY CAST(col_name AS sort_type) sort_order "
-			+ "LIMIT limit_count " + "OFFSET offset_count";
+	private String QRY_TEMPLATE;
+	private String QRY_RECORD_COUNT;
 	
-	private String QRY_RECORD_COUNT = "SELECT COUNT(*) FROM data_browser_persist WHERE filter_col like 'filter_key%'";
+	private Connection dsConn;
 
 	public DataBrowserModel() {
 		propChangeFirer = new SwingPropertyChangeSupport(this);
@@ -62,6 +60,34 @@ public class DataBrowserModel<E> {
 		pagination = p;
 		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_PAGINATION, oldVal, pagination);
 	}
+	
+	public void setDataTableSource(Connection conn, String tblName){
+		StringBuilder colsBdr = new StringBuilder();
+		
+		for(String col : colInfoMap.getPropertyNames()){
+			colsBdr.append(col).append(", ");
+		}
+		colsBdr.replace(colsBdr.length()-2, colsBdr.length(), "");
+		
+		//for oracle
+		QRY_TEMPLATE = "SELECT " + colsBdr.toString() + " FROM (SELECT " + colsBdr.toString() + ", row_number() over (ORDER BY col_name sort_order) rnk FROM " + tblName + ") WHERE rnk BETWEEN offset_count AND limit_count";
+		/*QRY_TEMPLATE = "SELECT " + bdr.toString() + " FROM " + tblName + " "
+				+ "WHERE filter_col like 'filter_key%' AND ROWNUM >= offset_count AND ROWNUM <= (to_number(limit_count) + to_number(offset_count)) "
+				+ "ORDER BY col_name sort_order ";
+				*/
+		QRY_RECORD_COUNT = "SELECT COUNT(*) FROM " + tblName + " WHERE filter_col like 'filter_key%'";
+		
+		sortCol = colInfoMap.getPropertyName(3);
+		sortOrder = SORT_ORDER.ASC;
+		sortType = colInfoMap.getPropertyType(3);
+	
+		filterCol = colInfoMap.getPropertyName(0);
+		filterKey = "";
+		
+		dsConn = conn;
+		
+		derivePagination(getDataSourceRowCount());
+	}
 
 	public void setDataTableSource(final List<E> list) {
 		
@@ -72,6 +98,14 @@ public class DataBrowserModel<E> {
 		if(tableDataSourceFormat == null){
 			throw new ModelException("Table data source format should be supplied before setting the data source..");
 		}
+		
+		AppStat.dbVendor = AppStat.DBVendor.HSQLDB;
+		
+		QRY_TEMPLATE = "SELECT * FROM data_browser_persist "
+						+ "WHERE filter_col like 'filter_key%' "
+						+ "ORDER BY CAST(col_name AS sort_type) sort_order "
+						+ "LIMIT limit_count " + "OFFSET offset_count";
+		QRY_RECORD_COUNT = "SELECT COUNT(*) FROM data_browser_persist WHERE filter_col like 'filter_key%'";
 		
 		new SwingWorker<Void, E>() {
 	        @Override
@@ -94,12 +128,11 @@ public class DataBrowserModel<E> {
 	    		} finally {
 	    			try {
 	    				stmt.close();
-	    				conn.close();
+	    				//conn.close();
 	    			} catch (Exception e) {
 	    				e.printStackTrace();
 	    			}
 	    		}
-	        	
 				return null;
 	        }
 	        
@@ -128,9 +161,12 @@ public class DataBrowserModel<E> {
 							.replace("filter_key", filterKey);
 		ResultSet rs = null;
 		Statement stmt = null;
+		Connection con = null;
 
 		try {
-			stmt = DBroUtil.getConnection().createStatement(); 
+			con = (dsConn == null) ? DBroUtil.getConnection() : dsConn;
+			stmt = con.createStatement(); 
+			System.out.println("Count query is : " + qryCount);
 			rs = stmt.executeQuery(qryCount);
 			
 			while(rs.next()){
@@ -138,7 +174,7 @@ public class DataBrowserModel<E> {
 				System.out.println("Data source count is : " + dataSourceRowCount);
 			}
 		} catch (Exception e) {
-			System.out.println(e.toString());
+			e.printStackTrace();
 			throw new ModelException(e.toString());
 		}
 		
@@ -161,7 +197,8 @@ public class DataBrowserModel<E> {
 		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_FILTER_KEY, oldVal, key);
 	}
 	/* Returns list of cropped data. Data is cropped by calculating the right
-	 * sql LIMIT and OFFSET to be applied in the query.
+	 * sql LIMIT and OFFSET to be applied in the query. For ORACLE, LIMIT and OFFSET are done
+	 * using some other codes
 	 * Filter and sort are also applied in the query.
 	 */
 	public List<E> getScrolledSource(int from, int to) throws ModelException, SQLException{
@@ -171,11 +208,16 @@ public class DataBrowserModel<E> {
 		Statement statement = null;
 		ResultSet rs = null;
 
-		recordLimit = to - from;
+		if(AppStat.dbVendor.equals(AppStat.DBVendor.ORACLE))
+			recordLimit = to;
+		else if(AppStat.dbVendor.equals(AppStat.DBVendor.MYSQL) ||
+				AppStat.dbVendor.equals(AppStat.DBVendor.HSQLDB))
+			recordLimit = to - from;
+		
 		recordOffset = from;
 		
 		try {
-			conn = DBroUtil.getConnection();
+			conn = (dsConn == null) ? DBroUtil.getConnection() : dsConn;
 			statement = conn.createStatement();
 			
 			String qry = QRY_TEMPLATE;
@@ -205,17 +247,26 @@ public class DataBrowserModel<E> {
 				cont.add(rs.getString(3));
 				cont.add(rs.getString(4));
 				cont.add(rs.getString(5));
+				cont.add(rs.getString(6));
+				cont.add(rs.getString(7));
+				cont.add(rs.getString(8));
+				cont.add(rs.getString(9));
+				cont.add(rs.getString(10));
+				cont.add(rs.getString(11));
+				cont.add(rs.getString(12));
+				cont.add(rs.getString(13));
 				retVal.add(tableDataSourceFormat.extractEntityFromList(cont));
 			}
 			
 		} catch (Exception e) {
 			System.out.println(e.toString());
+			e.printStackTrace();
 			throw new ModelException(e.toString());
 		} finally {
 			try {
 				rs.close();
 				statement.close();
-				conn.close();
+				//conn.close();
 			} catch (Exception e) {
 				//throw new ModelException(e.toString());
 			}
@@ -291,7 +342,7 @@ public class DataBrowserModel<E> {
 		Pagination p = new Pagination();
 		p.setCurrentPageNum(Pagination.FIRST_PAGE);
 		p.setMaxExposableCount(7);
-		p.setItemsPerPage(10000);
+		p.setItemsPerPage(10);
 
 		int itemsPerPage = p.getItemsPerPage();
 		int pageCountForEvenSize = (srcSize / itemsPerPage);

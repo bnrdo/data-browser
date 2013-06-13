@@ -29,6 +29,9 @@ public class DataBrowser<E> extends JPanel {
     private TableDataSourceFormat<E> sourceFormat;
     private ColumnInfoMap colInfoMap;
 
+    private Connection dsConn;
+    private String tableName;
+    
     public DataBrowser() {
         view = new DataBrowserView();
         model = new DataBrowserModel<E>();
@@ -41,6 +44,13 @@ public class DataBrowser<E> extends JPanel {
 
     public void setDataTableSource(List<E> src){
     	source = src;
+    	dsConn = null;
+    }
+    
+    public void setDataTableSource(Connection conn, String tblName){
+    	dsConn = conn;
+    	tableName = tblName;
+    	source = null;
     }
     
     public void setTableDataSourceFormat(TableDataSourceFormat<E> fmt){
@@ -74,9 +84,9 @@ public class DataBrowser<E> extends JPanel {
     	
     	model.setColInfoMap(colInfoMap);
     	model.setTableDataSourceFormat(sourceFormat);
-    	model.setDataTableSource(source);
     	
-    	
+    	if(dsConn == null) model.setDataTableSource(source);
+    	else if(source == null) model.setDataTableSource(dsConn, tableName);
     }
     
     private void validateInput(){
@@ -84,8 +94,8 @@ public class DataBrowser<E> extends JPanel {
     		throw new ModelException("Column info map should not be null");
     	else if(sourceFormat == null)
     		throw new ModelException("Format for the data source should not be null");
-    	else if(source == null)
-    		throw new ModelException("Data source should not be null");
+    	else if(source == null && dsConn == null)
+    		throw new ModelException("You should provide a valid datasource");
     }
     
     public javax.swing.JButton getTestButton(){
