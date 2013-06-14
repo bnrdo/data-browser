@@ -6,6 +6,8 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.MouseListener;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -17,8 +19,14 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
+import javax.swing.SwingConstants;
+import javax.swing.UIManager;
+import javax.swing.plaf.metal.MetalFileChooserUI.FilterComboBoxRenderer;
+import javax.swing.table.AbstractTableModel;
 import javax.swing.table.JTableHeader;
 
+import com.bnrdo.databrowser.domain.Person;
 import com.bnrdo.databrowser.listener.PushableTableHeaderListener;
 import com.bnrdo.databrowser.listener.TableSortListener;
 
@@ -32,14 +40,18 @@ public class DataBrowserView {
     private JComboBox cboSearch;
     private JButton btnSearch;
     private JTable tblData;
-    
-    private JButton testButton;
 
     private PageButton [] pageBtns;
     private PageButton btnFirst;
     private PageButton btnPrev;
     private PageButton btnNext;
     private PageButton btnLast;
+    
+    private JLabel lblSortCol;
+    private JLabel lblSortDir;
+    private JLabel lblFilterKey;
+    private JLabel lblFilterCol;
+    private JLabel lblRowCount;
 
     public DataBrowserView() {
         initUI();
@@ -60,30 +72,87 @@ public class DataBrowserView {
 
         pnlMain.add(pnlTable, BorderLayout.CENTER);
         pnlMain.add(pnlSearchAndPageHolder, BorderLayout.PAGE_START);
-        pnlMain.add(createTestButton(), BorderLayout.PAGE_END);
+        pnlMain.add(createStatPanel(), BorderLayout.PAGE_END);
     }
 
-    private JPanel createTestButton(){
-    	JPanel retVal = new JPanel(new BorderLayout());
-    	testButton = new JButton("Test Common");
-    	retVal.add(testButton, BorderLayout.CENTER);
+    private JPanel createStatPanel(){
+    	JPanel retVal = new JPanel();
+    	retVal.setLayout(new BoxLayout(retVal, BoxLayout.LINE_AXIS));
+    	retVal.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
+    	
+    	Font statFont = UIManager.getFont("Label.font");
+    	statFont = statFont.deriveFont(Font.BOLD, statFont.getSize()-2);
+    	
+    	JLabel columnSorted = new JLabel("Column Sorted : ");
+    	columnSorted.setFont(statFont);
+    	
+    	JLabel sortDirection = new JLabel("Sort Direction : ");
+    	sortDirection.setFont(statFont);
+    	
+    	JLabel recordCount = new JLabel("Record Count : ");
+    	recordCount.setFont(statFont);
+    	
+    	final JLabel columnFiltered = new JLabel("Column Filtered : ");
+    	columnFiltered.setFont(statFont);
+    	
+    	final JLabel keyword = new JLabel("Keyword : ");
+    	keyword.setFont(statFont);
+    	
+    	lblRowCount = new JLabel();
+    	lblSortCol = new JLabel();
+    	lblSortDir = new JLabel();
+    	lblFilterCol = new JLabel();
+    	lblFilterKey = new JLabel(){
+    		@Override public void setText(String text){
+    			if(text.equals("")){
+    				super.setText("");
+    				lblFilterCol.setText("");
+    				
+    				keyword.setVisible(false);
+        			columnFiltered.setVisible(false);
+    			}else{
+    				super.setText("'" + text + "'");
+    				
+    				keyword.setVisible(true);
+        			columnFiltered.setVisible(true);
+    			}
+    			
+    		}
+    	};
+    	
+    	retVal.add(columnSorted);
+    	retVal.add(lblSortCol);
+    	retVal.add(Box.createRigidArea(new Dimension(10,10)));
+    	retVal.add(sortDirection);
+    	retVal.add(lblSortDir);
+    	retVal.add(Box.createRigidArea(new Dimension(10,10)));
+    	retVal.add(columnFiltered);
+    	retVal.add(lblFilterCol);
+    	retVal.add(Box.createRigidArea(new Dimension(10,10)));
+    	retVal.add(keyword);
+    	retVal.add(lblFilterKey);
+    	retVal.add(Box.createRigidArea(new Dimension(10,10)));
+    	retVal.add(recordCount);
+    	retVal.add(lblRowCount);
+    	
+    	columnFiltered.setVisible(false);
+    	keyword.setVisible(false);
+    	
     	return retVal;
-    }
-    public JButton getTestButton(){
-    	return testButton;
     }
     
     @SuppressWarnings("serial")
     private JPanel createTablePanel() {
         JPanel retVal = new JPanel(new BorderLayout()) {
-            @Override
-            public Dimension getPreferredSize() {
+            @Override public Dimension getPreferredSize() {
                 return new Dimension(700, 300);
             }
         };
 
         tblData = new JTable();
         tblData.setVisible(false);
+        //tblData.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        tblData.setRowSelectionAllowed(true);
         
         JScrollPane pane = new JScrollPane(tblData);
         retVal.add(pane, BorderLayout.CENTER);
@@ -228,14 +297,30 @@ public class DataBrowserView {
         return btnLast;
     }
     
-    public void showTableLoader(){
+    public JLabel getLblSortCol() {
+		return lblSortCol;
+	}
+
+	public JLabel getLblSortDir() {
+		return lblSortDir;
+	}
+	
+	public JLabel getLblFilterKey() {
+		return lblFilterKey;
+	}
+
+	public JLabel getLblFilterCol() {
+		return lblFilterCol;
+	}
+	
+	public JLabel getLblRowCount(){
+		return lblRowCount;
+	}
+
+	public void showTableLoader(){
     	txtSearch.setEnabled(false);
     	btnSearch.setEnabled(false);
     	cboSearch.setEnabled(false);
-    	
-    	tblData.setRowSelectionAllowed(false);
-    	tblData.setColumnSelectionAllowed(false);
-    	
     	
     	JTableHeader header = tblData.getTableHeader();
     	header.setReorderingAllowed(false);
@@ -263,8 +348,6 @@ public class DataBrowserView {
     	btnSearch.setEnabled(true);
     	cboSearch.setEnabled(true);
     	
-    	tblData.setRowSelectionAllowed(true);
-    	tblData.setColumnSelectionAllowed(true);
     	tblData.getTableHeader().setReorderingAllowed(true);
     	tblData.getTableHeader().setResizingAllowed(true);
     	tblData.setEnabled(true);

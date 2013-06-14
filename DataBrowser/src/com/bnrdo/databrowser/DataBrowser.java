@@ -13,6 +13,7 @@ import javax.swing.JPanel;
 
 import org.hsqldb.DatabaseManager;
 
+import com.bnrdo.databrowser.Constants.SORT_ORDER;
 import com.bnrdo.databrowser.exception.ModelException;
 import com.bnrdo.databrowser.mvc.DataBrowserController;
 import com.bnrdo.databrowser.mvc.DataBrowserModel;
@@ -62,31 +63,18 @@ public class DataBrowser<E> extends JPanel {
     }
     
     public void create(){
-    	/*
-    	validateInput();
-    	model.setColInfoMap(colInfoMap);
-    	model.setTableDataSourceFormat(sourceFormat);
-    	model.setDataTableSource(source);
-    	
-    	Pagination p = new Pagination();
-    	p.setCurrentPageNum(Pagination.FIRST_PAGE);
-    	p.setMaxExposableCount(numOfPagesExposed);
-    	p.setItemsPerPage(itemsPerPage);
-    	
-    	model.setPagination(p);*/
     	validateInput();
     	
-    	/*Pagination p = new Pagination();
-    	p.setCurrentPageNum(Pagination.FIRST_PAGE);
-    	p.setMaxExposableCount(numOfPagesExposed);
-    	p.setItemsPerPage(itemsPerPage);
-    	model.setPagination(p);*/
-    	
-    	model.setColInfoMap(colInfoMap);
+    	model.setColInfoMap(colInfoMap);    		
     	model.setTableDataSourceFormat(sourceFormat);
     	
     	if(dsConn == null) model.setDataTableSource(source);
     	else if(source == null) model.setDataTableSource(dsConn, tableName);
+    	
+    	model.setSort(colInfoMap.getColumnName(0), 
+    					colInfoMap.getPropertyName(0), 
+    					SORT_ORDER.ASC, 
+    					colInfoMap.getPropertyType(0));
     }
     
     private void validateInput(){
@@ -96,10 +84,6 @@ public class DataBrowser<E> extends JPanel {
     		throw new ModelException("Format for the data source should not be null");
     	else if(source == null && dsConn == null)
     		throw new ModelException("You should provide a valid datasource");
-    }
-    
-    public javax.swing.JButton getTestButton(){
-    	return view.getTestButton();
     }
     
     public DataBrowserModel<E> getModel(){

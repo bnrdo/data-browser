@@ -47,12 +47,13 @@ public class TableSortListener<E> extends MouseAdapter{
     	if (!(selIndex < 0)) {
     		ColumnInfoMap map = model.getColInfoMap();
     		String propNameToSort = map.getPropertyName(selIndex);
+    		String colNameToSort = map.getColumnName(selIndex);
     		SQL_TYPE propType = map.getPropertyType(selIndex);
     		
     		if(model.getSortOrder().equals(SORT_ORDER.ASC)){
-    			model.setSort(propNameToSort, SORT_ORDER.DESC, propType);
+    			model.setSort(colNameToSort, propNameToSort, SORT_ORDER.DESC, propType);
     		}else{
-    			model.setSort(propNameToSort, SORT_ORDER.ASC, propType);
+    			model.setSort(colNameToSort, propNameToSort, SORT_ORDER.ASC, propType);
     		}
     	}
 	}

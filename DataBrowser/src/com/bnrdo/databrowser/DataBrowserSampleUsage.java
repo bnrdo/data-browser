@@ -20,7 +20,7 @@ import com.bnrdo.databrowser.format.PersonFormat;
 
 public class DataBrowserSampleUsage {
 	public static void main(String[] args) {
-		/*SwingUtilities.invokeLater(new Runnable() {
+		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
 				try {
 					//UIManager.setLookAndFeel("com.jgoodies.looks.plastic.PlasticXPLookAndFeel");
@@ -38,7 +38,7 @@ public class DataBrowserSampleUsage {
 				frame.pack();
 				frame.setVisible(true);
 			}
-		});*/
+		});
 	}
 	
 	private DataBrowser<Person> createDataBrowser() {
@@ -69,12 +69,12 @@ public class DataBrowserSampleUsage {
 		dbrowse.setDataTableSource(source);
 		dbrowse.create();
 		
-		dbrowse.getTestButton().addActionListener(new ActionListener() {
+		/*dbrowse.getTestButton().addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				dbrowse.setDataTableSource(generateRandomSource());
 				dbrowse.create();
 			}
-		});
+		});*/
 		
 		return dbrowse;
 	}

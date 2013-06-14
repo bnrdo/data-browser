@@ -6,6 +6,7 @@ import java.awt.event.MouseMotionListener;
 import java.beans.PropertyChangeEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import javax.swing.AbstractAction;
 import javax.swing.JButton;
@@ -21,6 +22,7 @@ import javax.swing.table.TableColumnModel;
 import com.bnrdo.databrowser.ColumnInfoMap;
 import com.bnrdo.databrowser.Constants;
 import com.bnrdo.databrowser.DBroUtil;
+import com.bnrdo.databrowser.Filter;
 import com.bnrdo.databrowser.PushableTableHeaderRenderer;
 import com.bnrdo.databrowser.Pagination;
 import com.bnrdo.databrowser.TableDataSourceFormat;
@@ -59,9 +61,12 @@ public class DataBrowserController<E> implements ModelListener {
 		btnSearch.setAction(new AbstractAction("Search") {
 			@Override
 			public void actionPerformed(ActionEvent arg0){
-				String key = txtSearch.getText();
-				String col = colInfo.getPropertyName(cboSearch.getSelectedIndex());
-				model.setFilter(key, col);
+				int index = cboSearch.getSelectedIndex();
+				Filter f= new Filter();
+				f.setKey(txtSearch.getText());
+				f.setCol(colInfo.getPropertyName(index));
+				f.setColAsInUI(colInfo.getColumnName(index));
+				model.setFilter(f);
 			}
 		});
 	}
@@ -175,8 +180,15 @@ public class DataBrowserController<E> implements ModelListener {
 		final Pagination p = model.getPagination();
 		
 		if(where instanceof Integer){
+			//if(p.getCurrentPageNum() == ((Integer)where))
+			//	return;
+			
 			p.setCurrentPageNum((Integer)where);
 		}else if(where instanceof String){
+			/*if(p.getCurrentPageNum() == p.getFirstRawPageNum() && where.toString().equals("FIRST") ||
+					p.getCurrentPageNum() == p.getLastRawPageNum() && where.toString().equals("LAST"))
+				return;*/
+			
 			p.setCurrentPageNum((String)where);
 		}else {
 			throw new ModelException("Invalid page click destination.");
@@ -191,10 +203,9 @@ public class DataBrowserController<E> implements ModelListener {
 			boolean loaded;
 			
 	        @Override
-	        protected Void doInBackground() throws Exception {
+	        protected Void doInBackground(){
 	        	loaded = false;
 	        	model.setDataForTableLoading(true);
-	        	
 	        	/* the scrollSrc.size() == 0 condition is in case the data is already fetch while an
 	        	 * insert to the persistent storage is not yet done. its a race between inserting data to
 	        	 * the db and query the db.
@@ -215,16 +226,23 @@ public class DataBrowserController<E> implements ModelListener {
 		        		System.out.println("from : " + from);
 		        		System.out.println("to : " + to);
 		        		
+		        		/* getscrolledsource might return a modelexception if the datasource type
+		        		 * is list. the list will be persisted to this app's DB using batch inserts.
+		        		 * if the batch insert is not yet done and the user requested for the last page,
+		        		 * the model will be thrown since the records for the last page is not yet inserted
+		        		 */
 						scrolledSrc = model.getScrolledSource(from, to);
-						loaded = true; break;
+						loaded = true;
 					}catch(ModelException e){
+						try{
+							Thread.currentThread().sleep(1000);
+						}catch(InterruptedException ie){
+							ie.printStackTrace();
+						}
 						System.out.println("Model is not yet ready. Attempting to request again...");
-					}
-		        	
-					try{
-						Thread.sleep(1000);
-					}catch(InterruptedException e){
-						//e.printStackTrace();
+						e.printStackTrace();
+					}catch(Exception e){
+						e.printStackTrace();
 					}
 	        	}
 				return null;
@@ -268,7 +286,6 @@ public class DataBrowserController<E> implements ModelListener {
 	public void propertyChange(PropertyChangeEvent evt){
 		String propName = evt.getPropertyName();
 		
-		
 		if (Constants.ModelFields.FN_DATA_TABLE_SOURCE_EXPOSED.equalsIgnoreCase(propName)) {
 			setupDataTableInView(view.getDataTable(), 
 								model.getColInfoMap(), 
@@ -276,13 +293,6 @@ public class DataBrowserController<E> implements ModelListener {
 		}else if(Constants.ModelFields.FN_PAGINATION.equalsIgnoreCase(propName)){
 			Pagination p = model.getPagination();
 			setupPageNumbersInView(p.getPageNumsExposed());
-			
-			// pagebtns array will be populated after executing setupPageNumbersInView
-			PageButton[] btns = view.getPageBtns();
-			if(btns.length > 0){
-				int index = DBroUtil.getIndexOfNumFromArray(p.getPageNumsExposed(), p.getCurrentPageNum()); 
-				btns[index].doClick();
-			}
 		}else if(Constants.ModelFields.FN_SORT_ORDER.equalsIgnoreCase(propName)){
 			Pagination p = model.getPagination();
 			PageButton[] btns = view.getPageBtns();
@@ -290,7 +300,10 @@ public class DataBrowserController<E> implements ModelListener {
 			if(btns.length > 0){
 				pageButtonIsClicked(p.getCurrentPageNum());
 			}
-		}else if(Constants.ModelFields.FN_FILTER_KEY.equalsIgnoreCase(propName)){
+			
+			view.getLblSortCol().setText(model.getSortColAsInUI());
+			view.getLblSortDir().setText(model.getSortOrder().toString());
+		}else if(Constants.ModelFields.FN_FILTER.equalsIgnoreCase(propName)){
 			PageButton[] btns = view.getPageBtns();
 			
 			if(btns.length == 0){
@@ -298,6 +311,12 @@ public class DataBrowserController<E> implements ModelListener {
 			}else{
 				pageButtonIsClicked(1);
 			}
+			
+			Filter f = model.getFilter();
+			
+			view.getLblFilterCol().setText(f.getColAsInUI());
+			view.getLblFilterKey().setText(f.getKey());
+			
 		}else if(Constants.ModelFields.FN_COL_INFO_MAP.equalsIgnoreCase(propName)){
 			setupFilterCategoryInView();
 		}else if(Constants.ModelFields.FN_IS_TABLE_LOADING.equalsIgnoreCase(propName)){
@@ -305,7 +324,8 @@ public class DataBrowserController<E> implements ModelListener {
 			
 			if(newVal == true) view.showTableLoader();
 			else view.hideTableLoader();
-			
+		}else if(Constants.ModelFields.FN_DATA_TABLE_SOURCE_ROW_COUNT.equalsIgnoreCase(propName)){
+			view.getLblRowCount().setText(Integer.toString((Integer)evt.getNewValue()));
 		}
 		
 		//the following fragments should also be put in place ok.

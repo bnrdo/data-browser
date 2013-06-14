@@ -114,12 +114,12 @@ public class DataBrowserSampleUsage2 {
 		dbrowse.setDataTableSource(con, "employee");
 		dbrowse.create();
 		
-		dbrowse.getTestButton().addActionListener(new ActionListener() {
+		/*dbrowse.getTestButton().addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				//dbrowse.setDataTableSource(generateRandomSource());
 				//dbrowse.create();
 			}
-		});
+		});*/
 		
 		return dbrowse;
 	}

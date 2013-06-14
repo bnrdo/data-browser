@@ -17,6 +17,7 @@ import com.bnrdo.databrowser.Constants.SQL_TYPE;
 import com.bnrdo.databrowser.AppStat;
 import com.bnrdo.databrowser.Constants;
 import com.bnrdo.databrowser.DBroUtil;
+import com.bnrdo.databrowser.Filter;
 import com.bnrdo.databrowser.Pagination;
 import com.bnrdo.databrowser.TableDataSourceFormat;
 import com.bnrdo.databrowser.exception.ModelException;
@@ -33,10 +34,14 @@ public class DataBrowserModel<E> {
 	private SORT_ORDER sortOrder;
 	private SQL_TYPE sortType;
 	private String sortCol;
-	private String filterCol;
-	private String filterKey;
+	private String sortColAsInUI;
+	private Filter filter;
 	
+	/* used by the view to change its state, not the realtime basis of row count since
+	 * query is done in background
+	 */
 	private int dataSourceRowCount;
+	
 	private int recordLimit;
 	private int recordOffset;
 	
@@ -48,11 +53,11 @@ public class DataBrowserModel<E> {
 	private Connection dsConn;
 
 	public DataBrowserModel() {
-		propChangeFirer = new SwingPropertyChangeSupport(this);
 		dataSourceRowCount = 0;
 		recordLimit = 0;
 		recordOffset = 0;
 		isDataForTableLoading = false;
+		propChangeFirer = new SwingPropertyChangeSupport(this);
 	}
 
 	public void setPagination(Pagination p) {
@@ -61,6 +66,9 @@ public class DataBrowserModel<E> {
 		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_PAGINATION, oldVal, pagination);
 	}
 	
+	/* setDataTableSource and its overloaded methods are like entry points.
+	 * set the default values after configuring the data source
+	 */
 	public void setDataTableSource(Connection conn, String tblName){
 		StringBuilder colsBdr = new StringBuilder();
 		
@@ -70,19 +78,16 @@ public class DataBrowserModel<E> {
 		colsBdr.replace(colsBdr.length()-2, colsBdr.length(), "");
 		
 		//for oracle
-		QRY_TEMPLATE = "SELECT " + colsBdr.toString() + " FROM (SELECT " + colsBdr.toString() + ", row_number() over (ORDER BY col_name sort_order) rnk FROM " + tblName + ") WHERE rnk BETWEEN offset_count AND limit_count";
-		/*QRY_TEMPLATE = "SELECT " + bdr.toString() + " FROM " + tblName + " "
-				+ "WHERE filter_col like 'filter_key%' AND ROWNUM >= offset_count AND ROWNUM <= (to_number(limit_count) + to_number(offset_count)) "
-				+ "ORDER BY col_name sort_order ";
-				*/
-		QRY_RECORD_COUNT = "SELECT COUNT(*) FROM " + tblName + " WHERE filter_col like 'filter_key%'";
+		QRY_TEMPLATE = "SELECT " + colsBdr.toString() + 
+				" FROM (SELECT " + colsBdr.toString() + 
+				", row_number() over (ORDER BY col_name sort_order) rnk FROM " + tblName + 
+				" WHERE upper(filter_col) LIKE upper('filter_key%')" + 
+				") WHERE rnk BETWEEN offset_count AND (limit_count-1)";
 		
-		sortCol = colInfoMap.getPropertyName(3);
-		sortOrder = SORT_ORDER.ASC;
-		sortType = colInfoMap.getPropertyType(3);
-	
-		filterCol = colInfoMap.getPropertyName(0);
-		filterKey = "";
+		QRY_RECORD_COUNT = "SELECT COUNT(*) FROM " + tblName + " WHERE filter_col LIKE 'filter_key%'";
+		
+	    //silent set the default value for filter (should not notify the listeners)
+		filter = new Filter("", colInfoMap.getPropertyName(0), colInfoMap.getColumnName(0));
 		
 		dsConn = conn;
 		
@@ -141,14 +146,9 @@ public class DataBrowserModel<E> {
 	        	System.out.println("its done bitchachos");
 	        }
 	    }.execute();
-		/* default values for sorting and filter
-		 */
-		sortCol = colInfoMap.getPropertyName(3);
-		sortOrder = SORT_ORDER.ASC;
-		sortType = colInfoMap.getPropertyType(3);
 	
-		filterCol = colInfoMap.getPropertyName(0);
-		filterKey = "";
+	    //silent set the default value for filter (should not notify the listeners)
+	    filter = new Filter("", colInfoMap.getPropertyName(0), colInfoMap.getColumnName(0));
 		
 		derivePagination(list.size());
 	}
@@ -157,8 +157,8 @@ public class DataBrowserModel<E> {
 		
 		String qryCount = QRY_RECORD_COUNT;
 		
-		qryCount = qryCount.replace("filter_col", filterCol)
-							.replace("filter_key", filterKey);
+		qryCount = qryCount.replace("filter_col", filter.getCol())
+							.replace("filter_key", filter.getKey());
 		ResultSet rs = null;
 		Statement stmt = null;
 		Connection con = null;
@@ -170,7 +170,7 @@ public class DataBrowserModel<E> {
 			rs = stmt.executeQuery(qryCount);
 			
 			while(rs.next()){
-				dataSourceRowCount = (int) rs.getLong(1);
+				setDataSourceRowCount((int) rs.getLong(1));
 				System.out.println("Data source count is : " + dataSourceRowCount);
 			}
 		} catch (Exception e) {
@@ -183,18 +183,17 @@ public class DataBrowserModel<E> {
 		return dataSourceRowCount;
 	}
 
-	public void setFilter(String key, String colFilter) {
-		String oldVal = filterKey;
-		filterKey = key;
-		filterCol = colFilter;
-		
+	public void setFilter(Filter filtr) {
+		System.out.println("filter is set yow");
+		Filter oldVal = filter;
+		filter = filtr;
 		/*just set the filter key and filter col to a new value, then
 		 * calling derivePagination will automatically compute for the number
 		 * of page numbers the filtered data needs
 		 */
 		derivePagination(getDataSourceRowCount());
 		
-		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_FILTER_KEY, oldVal, key);
+		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_FILTER, oldVal, filtr);
 	}
 	/* Returns list of cropped data. Data is cropped by calculating the right
 	 * sql LIMIT and OFFSET to be applied in the query. For ORACLE, LIMIT and OFFSET are done
@@ -233,8 +232,8 @@ public class DataBrowserModel<E> {
 			qry = qry.replace("sort_order", sortOrder.toString())
 					.replace("limit_count", Integer.toString((recordLimit)))
 					.replace("offset_count", Integer.toString(recordOffset))
-					.replace("filter_col", filterCol)
-					.replace("filter_key", filterKey);
+					.replace("filter_col", filter.getCol())
+					.replace("filter_key", filter.getKey());
 
 			System.out.println("query is : " + qry);
 			
@@ -296,6 +295,12 @@ public class DataBrowserModel<E> {
 		colInfoMap = map;
 		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_COL_INFO_MAP, oldVal, map);
 	}
+	
+	public void setDataSourceRowCount(int count){
+		int oldVal = dataSourceRowCount;
+		dataSourceRowCount = count;
+		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_DATA_TABLE_SOURCE_ROW_COUNT, oldVal, count);
+	}
 
 	public void setTableDataSourceFormat(TableDataSourceFormat<E> fmt) {
 		if (colInfoMap == null) {
@@ -323,12 +328,24 @@ public class DataBrowserModel<E> {
 	public SORT_ORDER getSortOrder() {
 		return sortOrder;
 	}
+	
+	public Filter getFilter(){
+		return filter;
+	}
+	
+	public String getSortColAsInUI(){
+		return sortColAsInUI;
+	}
 
-	public void setSort(String colToSort, SORT_ORDER order, SQL_TYPE type) {
+	public void setSort(String colAsInTable, String colToSort, SORT_ORDER order, SQL_TYPE type) {
 		SORT_ORDER oldVal = sortOrder;
 		sortOrder = order;
 		sortCol = colToSort;
 		sortType = type;
+		sortColAsInUI = colAsInTable;
+		
+		//firing just the sortorder is already enough because it always changes whenever
+		//setsort is called
 		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_SORT_ORDER, oldVal, order);
 	}
 

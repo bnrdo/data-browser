@@ -16,8 +16,10 @@ import java.util.Random;
 
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
+import javax.swing.JTable;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.table.DefaultTableModel;
 
 import com.bnrdo.databrowser.Constants.SQL_TYPE;
 import com.bnrdo.databrowser.DataBrowser;
@@ -27,7 +29,7 @@ import com.bnrdo.databrowser.format.LogsFormat;
 
 public class DataBrowserSampleUsage4 {
 	public static void main(String[] args) {
-		SwingUtilities.invokeLater(new Runnable() {
+		SwingUtilities.invokeLater(new Runnable(){
 			public void run() {
 				try {
 					//UIManager.setLookAndFeel("com.jgoodies.looks.plastic.PlasticXPLookAndFeel");
@@ -42,6 +44,16 @@ public class DataBrowserSampleUsage4 {
 				frame.getContentPane().setLayout(new BorderLayout());
 				frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 				frame.getContentPane().add(creator.createDataBrowser(), BorderLayout.CENTER);
+				
+				/*JTable tbl = new JTable();
+				tbl.setVisible(false);
+				DefaultTableModel mod = new DefaultTableModel(null, new Object[]{"2","2","2","2","2","2","2","2","2","2","2","2","2"});
+				mod.addRow(new Object[]{"2","2","2","2","2","2","2","2","2","2","2","2","2"});
+				mod.addRow(new Object[]{"2","2","2","2","2","2","2","2","2","2","2","2","2"});
+				tbl.setModel(mod);
+				tbl.setVisible(true);
+				frame.getContentPane().add(tbl, BorderLayout.CENTER);*/
+				
 				frame.pack();
 				frame.setVisible(true);
 			}
