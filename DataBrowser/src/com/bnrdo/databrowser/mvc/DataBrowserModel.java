@@ -3,6 +3,7 @@ package com.bnrdo.databrowser.mvc;
 import java.beans.PropertyChangeListener;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -10,6 +11,9 @@ import java.util.List;
 
 import javax.swing.SwingWorker;
 import javax.swing.event.SwingPropertyChangeSupport;
+import javax.swing.table.DefaultTableModel;
+
+import org.apache.commons.lang3.mutable.MutableInt;
 
 import com.bnrdo.databrowser.ColumnInfoMap;
 import com.bnrdo.databrowser.Constants.SORT_ORDER;
@@ -21,31 +25,37 @@ import com.bnrdo.databrowser.Filter;
 import com.bnrdo.databrowser.Pagination;
 import com.bnrdo.databrowser.TableDataSourceFormat;
 import com.bnrdo.databrowser.exception.ModelException;
+import com.bnrdo.databrowser.mvc.services.ModelService;
 
 public class DataBrowserModel<E> {
 
 	private Pagination pagination;
-	private List<E> dataTableSourceExposed;
 	private TableDataSourceFormat<E> tableDataSourceFormat;
 	private ColumnInfoMap colInfoMap;
+	private DefaultTableModel pagedTableModel;
 
 	private SwingPropertyChangeSupport propChangeFirer;
-
+	private ModelService service;
+	
 	private SORT_ORDER sortOrder;
 	private SQL_TYPE sortType;
 	private String sortCol;
 	private String sortColAsInUI;
 	private Filter filter;
+	private List<E> dataSource;
 	
 	/* used by the view to change its state, not the realtime basis of row count since
 	 * query is done in background
 	 */
 	private int dataSourceRowCount;
-	
 	private int recordLimit;
 	private int recordOffset;
 	
+	//for List data source, this tracks the number of records currently inserted to the embedded DB
+	private MutableInt INSERTED;
+	
 	private boolean isDataForTableLoading;
+	private boolean isDataSourceLoading;
 
 	private String QRY_TEMPLATE;
 	private String QRY_RECORD_COUNT;
@@ -57,7 +67,9 @@ public class DataBrowserModel<E> {
 		recordLimit = 0;
 		recordOffset = 0;
 		isDataForTableLoading = false;
+		isDataSourceLoading = false;
 		propChangeFirer = new SwingPropertyChangeSupport(this);
+		service = new ModelService<E>();
 	}
 
 	public void setPagination(Pagination p) {
@@ -103,14 +115,18 @@ public class DataBrowserModel<E> {
 		if(tableDataSourceFormat == null){
 			throw new ModelException("Table data source format should be supplied before setting the data source..");
 		}
-		
-		AppStat.dbVendor = AppStat.DBVendor.HSQLDB;
+				
+		AppStat.dbVendor = AppStat.DBVendor.HSQLDB_EMBEDDED;
+		dataSource = list;
+		INSERTED = new MutableInt(0);
 		
 		QRY_TEMPLATE = "SELECT * FROM data_browser_persist "
 						+ "WHERE filter_col like 'filter_key%' "
 						+ "ORDER BY CAST(col_name AS sort_type) sort_order "
 						+ "LIMIT limit_count " + "OFFSET offset_count";
 		QRY_RECORD_COUNT = "SELECT COUNT(*) FROM data_browser_persist WHERE filter_col like 'filter_key%'";
+		
+		setDataSourceLoading(true);
 		
 		new SwingWorker<Void, E>() {
 	        @Override
@@ -124,9 +140,9 @@ public class DataBrowserModel<E> {
 	    			// table name = data_browser_persist
 	    			stmt.execute("DROP TABLE IF EXISTS DATA_BROWSER_PERSIST;");
 	    			stmt.execute("SET IGNORECASE TRUE;");
-	    			stmt.execute(DBroUtil.translateColInfoMapToCreateDbQuery(colInfoMap));
+	    			stmt.execute(service.translateColInfoMapToCreateDbQuery(colInfoMap));
 	    			
-	    			DBroUtil.populateTable(stmt, list, tableDataSourceFormat);
+	    			service.populateTable(stmt, list, tableDataSourceFormat, INSERTED);
 	    			
 	    		} catch (Exception e) {
 	    			e.printStackTrace();
@@ -144,6 +160,9 @@ public class DataBrowserModel<E> {
 	        @Override
 	        protected void done() {
 	        	System.out.println("its done bitchachos");
+	        	System.out.println("Passed data source set to null, cannot use its cached size anymore. Will use select count for getting the dssize.");
+	        	dataSource = null;
+	        	setDataSourceLoading(false);
 	        }
 	    }.execute();
 	
@@ -154,6 +173,13 @@ public class DataBrowserModel<E> {
 	}
 	
 	public int getDataSourceRowCount() throws ModelException{
+		
+		if(AppStat.isUsingListDS() && dataSource != null){
+			System.out.println("Base datasource not fully processed. Using its cached size.");
+			int cachedRowCount = dataSource.size();
+			setDataSourceRowCount(cachedRowCount);
+			return cachedRowCount;
+		}
 		
 		String qryCount = QRY_RECORD_COUNT;
 		
@@ -200,94 +226,119 @@ public class DataBrowserModel<E> {
 	 * using some other codes
 	 * Filter and sort are also applied in the query.
 	 */
-	public List<E> getScrolledSource(int from, int to) throws ModelException, SQLException{
-		List<E> retVal = new ArrayList<E>();
-
-		Connection conn = null;
-		Statement statement = null;
-		ResultSet rs = null;
-
-		if(AppStat.dbVendor.equals(AppStat.DBVendor.ORACLE))
-			recordLimit = to;
-		else if(AppStat.dbVendor.equals(AppStat.DBVendor.MYSQL) ||
-				AppStat.dbVendor.equals(AppStat.DBVendor.HSQLDB))
-			recordLimit = to - from;
+	public void populateTableWithScrolledSource(final int from, final int to){
+		System.out.println("inside populateTableWithScrolledSource");
 		
-		recordOffset = from;
-		
-		try {
-			conn = (dsConn == null) ? DBroUtil.getConnection() : dsConn;
-			statement = conn.createStatement();
+		new SwingWorker<Void, List<String>>() {
 			
-			String qry = QRY_TEMPLATE;
+			private Connection conn = null;
+			private Statement statement = null;
+			private ResultSet rs = null;
+			private ResultSetMetaData rsmd = null;
 			
-			/* start fetching the scrolled list */
-			if (sortType == SQL_TYPE.STRING) {
-				qry = qry.replace("CAST(col_name AS sort_type)", sortCol);
-			} else {
-				qry = qry.replace("col_name", sortCol);
-				qry = qry.replace("sort_type", sortType.toString());
-			}
-			
-			qry = qry.replace("sort_order", sortOrder.toString())
-					.replace("limit_count", Integer.toString((recordLimit)))
-					.replace("offset_count", Integer.toString(recordOffset))
-					.replace("filter_col", filter.getCol())
-					.replace("filter_key", filter.getKey());
+	        @Override
+	        protected Void doInBackground() throws Exception {
+	        	if(AppStat.dbVendor.equals(AppStat.DBVendor.ORACLE))
+	        		recordLimit = to;
+	        	else if(AppStat.dbVendor.equals(AppStat.DBVendor.MYSQL) ||
+	        			AppStat.isUsingListDS())
+	        		recordLimit = to - from;
 
-			System.out.println("query is : " + qry);
-			
-			rs = statement.executeQuery(qry);
-			
-			while (rs.next()) {
-				List<String> cont = new ArrayList<String>();
-				cont.add(rs.getString(1));
-				cont.add(rs.getString(2));
-				cont.add(rs.getString(3));
-				cont.add(rs.getString(4));
-				cont.add(rs.getString(5));
-				cont.add(rs.getString(6));
-				cont.add(rs.getString(7));
-				cont.add(rs.getString(8));
-				cont.add(rs.getString(9));
-				cont.add(rs.getString(10));
-				cont.add(rs.getString(11));
-				cont.add(rs.getString(12));
-				cont.add(rs.getString(13));
-				retVal.add(tableDataSourceFormat.extractEntityFromList(cont));
-			}
-			
-		} catch (Exception e) {
-			System.out.println(e.toString());
-			e.printStackTrace();
-			throw new ModelException(e.toString());
-		} finally {
-			try {
-				rs.close();
-				statement.close();
-				//conn.close();
-			} catch (Exception e) {
-				//throw new ModelException(e.toString());
-			}
-		}
-
-		return retVal;
+	        	recordOffset = from;
+	        	
+	        	try {
+	        		conn = (dsConn == null) ? DBroUtil.getConnection() : dsConn;
+	        		statement = conn.createStatement();
+	        		
+	        		String qry = QRY_TEMPLATE;
+	        		
+	        		/* start fetching the scrolled list */
+	        		if (sortType == SQL_TYPE.STRING) {
+	        			qry = qry.replace("CAST(col_name AS sort_type)", sortCol);
+	        		} else {
+	        			qry = qry.replace("col_name", sortCol);
+	        			qry = qry.replace("sort_type", sortType.toString());
+	        		}
+	        		
+	        		qry = qry.replace("sort_order", sortOrder.toString())
+	        				.replace("limit_count", Integer.toString((recordLimit)))
+	        				.replace("offset_count", Integer.toString(recordOffset))
+	        				.replace("filter_col", filter.getCol())
+	        				.replace("filter_key", filter.getKey());
+	        		
+	        		System.out.println("query is : " + qry);
+	        		
+	        		setDataForTableLoading(true);
+	        		pagedTableModel.setRowCount(0);
+	        		
+	        		if(AppStat.isUsingListDS()){
+		        		int inserted = INSERTED.intValue();
+		        		System.out.println("INSERTED " + inserted + " records to the embedded DB.");
+		        		if(inserted < to){
+		        			System.out.println("INSERTED record size is not enough for the requested ResultSet [from : " + from + " | to : " + to +"]");
+		        			
+		        			while(INSERTED.intValue() < to){
+		        				System.out.println("Waiting for the model to insert the requested records.");
+		        				Thread.currentThread().sleep(500);
+		        			}
+		        		}
+	        		}
+	        		
+	        		rs = statement.executeQuery(qry);
+	        		rsmd = rs.getMetaData();
+	        		
+	        		while (rs.next()) {
+	        			List<String> cont = new ArrayList<String>();
+	        			int colCount = rsmd.getColumnCount();
+	        			
+	        			for(int i = 1; i <= colCount; i++){
+	        				cont.add(rs.getString(i));
+	        			}
+	        			
+	        			publish(cont);
+	        		}
+	        	} catch (Exception e) {
+	        		e.printStackTrace();
+	        		throw new ModelException(e.toString());
+	        	} finally {
+	        		try {
+	        			rs.close();
+	        			statement.close();
+	        			//conn.close();
+	        		} catch (Exception e) {
+	        			//throw new ModelException(e.toString());
+	        		}
+	        	}
+				return null;
+	        }
+	        @Override
+	        protected void process(List<List<String>> chunks){
+	        	for(List<String> list : chunks){
+	        		System.out.println("published " + list + " to the table");
+	        		pagedTableModel.addRow(list.toArray());
+	        	}
+	        }
+	        
+	        @Override
+	        protected void done() {
+	        	setDataForTableLoading(false);
+	        }
+	    }.execute();
+	    
 	}
 
-	public void setDataTableSourceExposed(List<E> list) {
-		List<E> oldVal = dataTableSourceExposed;
-		dataTableSourceExposed = list;
-		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_DATA_TABLE_SOURCE_EXPOSED, oldVal, list);
-	}
+	
 	
 	public void setDataForTableLoading(boolean bool) {
 		boolean oldVal = isDataForTableLoading;
 		isDataForTableLoading = bool;
 		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_IS_TABLE_LOADING, oldVal, bool);
 	}
-
-	public List<E> getDataTableSourceExposed() {
-		return dataTableSourceExposed;
+	
+	public void setDataSourceLoading(boolean bool) {
+		boolean oldVal = isDataSourceLoading;
+		isDataSourceLoading = bool;
+		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_IS_DS_LOADING, oldVal, bool);
 	}
 
 	public void setColInfoMap(ColumnInfoMap map) {
@@ -311,6 +362,16 @@ public class DataBrowserModel<E> {
 			propChangeFirer.firePropertyChange(Constants.ModelFields.FN_DATA_TABLE_SOURCE_FORMAT,
 					oldVal, fmt);
 		}
+	}
+	
+	public DefaultTableModel getPagedTableModel(){
+		return pagedTableModel;
+	}
+	
+	public void setPagedTableModel(DefaultTableModel model){
+		DefaultTableModel oldVal = pagedTableModel;
+		pagedTableModel = model;
+		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_PAGED_TABLE_MODEL, oldVal, model);
 	}
 
 	public ColumnInfoMap getColInfoMap() {

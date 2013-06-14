@@ -8,6 +8,8 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 
+import org.apache.commons.lang3.mutable.MutableInt;
+
 import com.bnrdo.databrowser.Constants.SORT_ORDER;
 import com.bnrdo.databrowser.Constants.SQL_TYPE;
 import com.bnrdo.databrowser.comparator.DateComparator;
@@ -152,34 +154,7 @@ public class DBroUtil {
 		
 		return bdr.toString();
 	}
-	public static <E> void populateTable(Statement stmt, List<E> source, TableDataSourceFormat<E> fmt) throws SQLException{
-		int countForLog = 0;
-		StringBuilder bdr = new StringBuilder();
-		bdr.append("INSERT INTO data_browser_persist VALUES ");
-		
-		for(E e : source){
-			bdr.append("(");
-    		for(int i = 0; i < fmt.getColumnCount(); i++){
-    			bdr.append("'").append(fmt.getValueAt(i, e)).append("', ");
-    			//System.out.print(fmt.getValueAt(i, e) + " ");
-    		}
-    		//System.out.println();
-    		bdr.replace(bdr.length()-2, bdr.length(), "");
-    		bdr.append("), ");
-    		
-    		countForLog++;
-    		
-    		if(countForLog % 1000 == 0 || countForLog == source.size()){
-    			bdr.replace(bdr.length()-2, bdr.length(), "");
-    			stmt.executeUpdate(bdr.toString());
-    			bdr = new StringBuilder();
-    			bdr.append("INSERT INTO data_browser_persist VALUES ");
-    		}
-    		source.remove(e);
-    	}
-		System.out.println(countForLog + " rows succesfully inserted!");
-    }
-
+	
 	public static String getSortQryChunk(String sortCol, SORT_ORDER sortOrder, SQL_TYPE sortType){
 		StringBuilder retVal = new StringBuilder();
 		retVal.append("ORDER BY "); 
@@ -207,26 +182,5 @@ public class DBroUtil {
 		return retVal.toString();
 	}
 	
-    public static String translateColInfoMapToCreateDbQuery(ColumnInfoMap colInfoMap){
-    	StringBuilder retVal = new StringBuilder();
-    	boolean primarySet = false;
-    	
-    	retVal.append("CREATE CACHED TABLE data_browser_persist ( ");
-    	
-    	for(Integer i : colInfoMap.getKeySet()){
-    		if(colInfoMap.hasIndex(i)){
-    			retVal.append(colInfoMap.getPropertyName(i));
-    			if(!primarySet){
-    				retVal.append(" varchar(256) not null primary key, ");
-    				primarySet = true;
-    			}else{
-    				retVal.append(" varchar(256) not null, ");
-    			}
-    		}
-    	}
-    	retVal.replace(retVal.length()-2, retVal.length(), "");
-    	retVal.append(" );");
-    	
-    	return retVal.toString();
-    }
+    
 }

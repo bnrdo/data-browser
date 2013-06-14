@@ -52,6 +52,7 @@ public class DataBrowserView {
     private JLabel lblFilterKey;
     private JLabel lblFilterCol;
     private JLabel lblRowCount;
+    private JLabel lblLoadingDS;
 
     public DataBrowserView() {
         initUI();
@@ -98,6 +99,7 @@ public class DataBrowserView {
     	final JLabel keyword = new JLabel("Keyword : ");
     	keyword.setFont(statFont);
     	
+    	lblLoadingDS = new JLabel("Loading datasource...");
     	lblRowCount = new JLabel();
     	lblSortCol = new JLabel();
     	lblSortDir = new JLabel();
@@ -134,7 +136,10 @@ public class DataBrowserView {
     	retVal.add(Box.createRigidArea(new Dimension(10,10)));
     	retVal.add(recordCount);
     	retVal.add(lblRowCount);
+    	retVal.add(Box.createHorizontalGlue());
+    	retVal.add(lblLoadingDS);
     	
+    	lblLoadingDS.setVisible(false);
     	columnFiltered.setVisible(false);
     	keyword.setVisible(false);
     	
@@ -150,7 +155,6 @@ public class DataBrowserView {
         };
 
         tblData = new JTable();
-        tblData.setVisible(false);
         //tblData.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         tblData.setRowSelectionAllowed(true);
         
@@ -315,6 +319,14 @@ public class DataBrowserView {
 	
 	public JLabel getLblRowCount(){
 		return lblRowCount;
+	}
+	
+	public void showLoadingDSNoti(){
+		lblLoadingDS.setVisible(true);
+	}
+	
+	public void hideLoadingDSNoti(){
+		lblLoadingDS.setVisible(false);
 	}
 
 	public void showTableLoader(){
