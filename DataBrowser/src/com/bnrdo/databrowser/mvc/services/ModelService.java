@@ -51,7 +51,7 @@ public class ModelService<E> {
     		if(colInfoMap.hasIndex(i)){
     			retVal.append(colInfoMap.getPropertyName(i));
     			if(!primarySet){
-    				retVal.append(" varchar(256) not null primary key, ");
+    				retVal.append(" varchar(256) not null, ");
     				primarySet = true;
     			}else{
     				retVal.append(" varchar(256) not null, ");

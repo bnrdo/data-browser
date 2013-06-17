@@ -122,7 +122,7 @@ public class DataBrowserModel<E> {
 		
 		QRY_TEMPLATE = "SELECT * FROM data_browser_persist "
 						+ "WHERE filter_col like 'filter_key%' "
-						+ "ORDER BY CAST(col_name AS sort_type) sort_order "
+						+ "ORDER BY col_name sort_order "
 						+ "LIMIT limit_count " + "OFFSET offset_count";
 		QRY_RECORD_COUNT = "SELECT COUNT(*) FROM data_browser_persist WHERE filter_col like 'filter_key%'";
 		
@@ -168,6 +168,7 @@ public class DataBrowserModel<E> {
 	
 	    //silent set the default value for filter (should not notify the listeners)
 	    filter = new Filter("", colInfoMap.getPropertyName(0), colInfoMap.getColumnName(0));
+	    
 		setDataSourceRowCount(queryRowCount());
 		derivePagination(getDataSourceRowCount());
 	}
@@ -250,12 +251,8 @@ public class DataBrowserModel<E> {
 	        		String qry = QRY_TEMPLATE;
 	        		
 	        		/* start fetching the scrolled list */
-	        		if (sortType == SQL_TYPE.STRING) {
-	        			qry = qry.replace("CAST(col_name AS sort_type)", sortCol);
-	        		} else {
-	        			qry = qry.replace("col_name", sortCol);
-	        			qry = qry.replace("sort_type", sortType.toString());
-	        		}
+        			qry = qry.replace("col_name", sortCol);
+        			qry = qry.replace("sort_type", sortType.toString());
 	        		
 	        		qry = qry.replace("sort_order", sortOrder.toString())
 	        				.replace("limit_count", Integer.toString((recordLimit)))
@@ -321,9 +318,16 @@ public class DataBrowserModel<E> {
 	        		pagedTableModel.addRow(list.toArray());
 	        	}
 	        }
-	        
 	        @Override
 	        protected void done() {
+	        	if(tblShouldClear == true){
+	        		/* in case there is no published data, the old table data wont
+	        		 * be cleared because the clearing of the table data happens on
+	        		 * the first publish. To avoid that, do this check again in the done()
+	        		 */
+	        		pagedTableModel.setRowCount(0);
+	        	}
+	        	
 	        	setDataForTableLoading(false);
 	        }
 	    }.execute();

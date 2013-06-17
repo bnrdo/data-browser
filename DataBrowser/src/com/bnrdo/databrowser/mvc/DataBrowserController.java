@@ -9,8 +9,10 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import javax.swing.AbstractAction;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JLabel;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingWorker;
@@ -62,6 +64,7 @@ public class DataBrowserController<E> implements ModelListener {
 		btn.setAction(new AbstractAction("Search") {
 			@Override
 			public void actionPerformed(ActionEvent arg0){
+				System.out.println("pindolya");
 				int index = cbo.getSelectedIndex();
 				Filter f= new Filter();
 				f.setKey(txt.getText());
@@ -111,7 +114,7 @@ public class DataBrowserController<E> implements ModelListener {
 	}
 
 	@SuppressWarnings("serial")
-	private void setupPageNumbersInView(int[] pages) {
+	private void setupPageNumbersInView(int[] pages, int currentPageNum) {
 
 		view.createPageButtons(pages);
 		
@@ -151,6 +154,7 @@ public class DataBrowserController<E> implements ModelListener {
 				}
 			});
 		}
+		changeCurrentPageNum(currentPageNum);
 	}
 
 	private void pageButtonIsClicked(Object where){
@@ -208,43 +212,48 @@ public class DataBrowserController<E> implements ModelListener {
 	}
 	
 	/* if data in model changes reflect it to the UI
-	 * This part can be refactored, but I think its more readable this way
 	 */
 	public void propertyChange(PropertyChangeEvent evt){
 		String propName = evt.getPropertyName();
 		
 		if(Constants.ModelFields.FN_PAGINATION.equalsIgnoreCase(propName)){
 			Pagination newVal = (Pagination) evt.getNewValue();
-			
-			setupPageNumbersInView(newVal.getPageNumsExposed());
-			changeCurrentPageNum(newVal.getCurrentPageNum());
+			setupPageNumbersInView(newVal.getPageNumsExposed(), newVal.getCurrentPageNum());
 		}else if(Constants.ModelFields.FN_SORT_ORDER.equalsIgnoreCase(propName)){
-			Pagination p = model.getPagination();
-			PageButton[] btns = view.getPageBtns();
 			
-			view.showStatus("Sorting by " + model.getSortColAsInUI() + " " + model.getSortOrder().toString());
-			
-			if(btns.length > 0){
+			if(view.getPageBtns().length > 0){
+				Pagination p = model.getPagination();
 				pageButtonIsClicked(p.getCurrentPageNum());
-			}
-			
-			view.getLblSortCol().setText(model.getSortColAsInUI());
-			view.getLblSortDir().setText(model.getSortOrder().toString());
-			 
+				
+				view.showStatus("Sorting by " + model.getSortColAsInUI() + " " + model.getSortOrder().toString());
+				
+				JLabel lblSort = view.getLblSort();
+				lblSort.setText(model.getSortColAsInUI());
+				if(model.getSortOrder().equals(Constants.SORT_ORDER.ASC)){
+					lblSort.setIcon(new ImageIcon(getClass().getResource("/sort_asc_16x16.png")));
+					lblSort.setToolTipText("Column Sorted : " + lblSort.getText() + " | Sort Order : Ascending");
+				}else{
+					lblSort.setIcon(new ImageIcon(getClass().getResource("/sort_desc_16x16.png")));
+					lblSort.setToolTipText("Column Sorted : " + lblSort.getText() + " | Sort Order : Descending");
+				}
+				//view.getLblSortDir().setText(model.getSortOrder().toString());
+			} 
 		}else if(Constants.ModelFields.FN_FILTER.equalsIgnoreCase(propName)){
 			view.showStatus("Filtering by " + model.getSortColAsInUI() + " Keyword : " + model.getSortOrder().toString());
-			
-			if(view.getPageBtns().length == 0){
-				model.getPagedTableModel().setRowCount(0);
-			}else{
-				pageButtonIsClicked(1);
-			}
+			pageButtonIsClicked(1);
 			
 			Filter f = model.getFilter();
+			JLabel lblFilter = view.getLblFilter();
 			
-			view.getLblFilterCol().setText(f.getColAsInUI());
-			view.getLblFilterKey().setText(f.getKey());
-			
+			if(f.getKey().equals("")){
+				lblFilter.setVisible(false);
+			}else{
+				lblFilter.setText(f.getColAsInUI() + " : '" + f.getKey() + "'");
+				lblFilter.setIcon(new ImageIcon(getClass().getResource("/filter_16x16.gif")));
+				lblFilter.setToolTipText("Column Filtered : " + lblFilter.getText().split(":")[0] 
+												+ " | Keyword : " + lblFilter.getText().split(":")[1]);
+				lblFilter.setVisible(true);
+			}
 		}else if(Constants.ModelFields.FN_COL_INFO_MAP.equalsIgnoreCase(propName)){
 			ColumnInfoMap newVal = (ColumnInfoMap) evt.getNewValue();
 			model.setPagedTableModel(new DefaultTableModel(null, newVal.getColumnNames()));
@@ -258,12 +267,20 @@ public class DataBrowserController<E> implements ModelListener {
 				view.hideStatus();
 			}
 		}else if(Constants.ModelFields.FN_DATA_TABLE_SOURCE_ROW_COUNT.equalsIgnoreCase(propName)){
-			view.getLblRowCount().setText(Integer.toString((Integer)evt.getNewValue()));
+			JLabel lblRowCount = view.getLblRowCount();
+			lblRowCount.setIcon(new ImageIcon(getClass().getResource("/row_count2_16x16.png")));
+			lblRowCount.setText(Integer.toString((Integer)evt.getNewValue()));
+			lblRowCount.setToolTipText("Total Record Count Returned : " + lblRowCount.getText());
 		}else if(Constants.ModelFields.FN_IS_DS_LOADING.equalsIgnoreCase(propName)){
 			boolean newVal = (Boolean) evt.getNewValue();
 			
-			if(newVal == true) view.showStatus("Loading datasource");
-			else view.hideStatus();
+			if(newVal == true){
+				view.disableSearch();
+				view.showStatus("Loading datasource");
+			}else{
+				view.enableSearch();
+				view.hideStatus();
+			}
 		}else if(Constants.ModelFields.FN_PAGED_TABLE_MODEL.equalsIgnoreCase(propName)){
 			DefaultTableModel newVal = (DefaultTableModel) evt.getNewValue();
 			ColumnInfoMap colInfo = model.getColInfoMap();

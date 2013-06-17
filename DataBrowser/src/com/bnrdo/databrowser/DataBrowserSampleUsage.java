@@ -79,14 +79,16 @@ public class DataBrowserSampleUsage {
 		return dbrowse;
 	}
 	public List<Person> generateRandomSource(){
+		DataBrowserSampleUsage2 dbsu = new DataBrowserSampleUsage2();
+		
 		Random r = new Random();
 		int num = 100000;//r.nextInt(1000);
 		System.out.println("Generating " + num + " rows...");
 		List<Person> retVal = new ArrayList<Person>();
 		for (int i = 1; i <= num; i++) {
 			Person p = new Person();
-			p.setFirstName("First Name" + i);
-			p.setLastName("Last Name" + i);
+			p.setFirstName(dbsu.getRandomFirstName());
+			p.setLastName(dbsu.getRandomLastName());
 			
 			//date should be sumthin like this
 			String target = "2013-6-05 10:59:11.00129";
@@ -99,8 +101,8 @@ public class DataBrowserSampleUsage {
 			}  
 			p.setBirthDay(new Date());
 			
-			p.setOccupation("Occupation" + i);
-			p.setAge(i);
+			p.setOccupation(dbsu.getRandomOccupation());
+			p.setAge(dbsu.getRandomAge());
 			retVal.add(p);
 		}
 		return retVal;

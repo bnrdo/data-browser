@@ -6,8 +6,6 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.event.MouseListener;
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -19,17 +17,10 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
-import javax.swing.ListSelectionModel;
-import javax.swing.SwingConstants;
 import javax.swing.UIManager;
-import javax.swing.plaf.metal.MetalFileChooserUI.FilterComboBoxRenderer;
-import javax.swing.table.AbstractTableModel;
 import javax.swing.table.JTableHeader;
 
-import com.bnrdo.databrowser.domain.Person;
 import com.bnrdo.databrowser.listener.Disablelable;
-import com.bnrdo.databrowser.listener.PushableTableHeaderListener;
-import com.bnrdo.databrowser.listener.TableSortListener;
 
 public class DataBrowserView {
     private JPanel pnlMain;
@@ -48,10 +39,8 @@ public class DataBrowserView {
     private PageButton btnNext;
     private PageButton btnLast;
     
-    private JLabel lblSortCol;
-    private JLabel lblSortDir;
-    private JLabel lblFilterKey;
-    private JLabel lblFilterCol;
+    private JLabel lblSort;
+    private JLabel lblFilter;
     private JLabel lblRowCount;
     private JLabel lblStatus;
 
@@ -85,64 +74,23 @@ public class DataBrowserView {
     	Font statFont = UIManager.getFont("Label.font");
     	statFont = statFont.deriveFont(Font.BOLD, statFont.getSize()-2);
     	
-    	JLabel columnSorted = new JLabel("Column Sorted : ");
-    	columnSorted.setFont(statFont);
-    	
-    	JLabel sortDirection = new JLabel("Sort Direction : ");
-    	sortDirection.setFont(statFont);
-    	
-    	JLabel recordCount = new JLabel("Record Count : ");
-    	recordCount.setFont(statFont);
-    	
-    	final JLabel columnFiltered = new JLabel("Column Filtered : ");
-    	columnFiltered.setFont(statFont);
-    	
-    	final JLabel keyword = new JLabel("Keyword : ");
-    	keyword.setFont(statFont);
-    	
     	lblStatus = new JLabel();
     	lblRowCount = new JLabel();
-    	lblSortCol = new JLabel();
-    	lblSortDir = new JLabel();
-    	lblFilterCol = new JLabel();
-    	lblFilterKey = new JLabel(){
-    		@Override public void setText(String text){
-    			if(text.equals("")){
-    				super.setText("");
-    				lblFilterCol.setText("");
-    				
-    				keyword.setVisible(false);
-        			columnFiltered.setVisible(false);
-    			}else{
-    				super.setText("'" + text + "'");
-    				
-    				keyword.setVisible(true);
-        			columnFiltered.setVisible(true);
-    			}
-    			
-    		}
-    	};
+    	lblSort = new JLabel();
+    	lblFilter = new JLabel();
     	
-    	retVal.add(columnSorted);
-    	retVal.add(lblSortCol);
-    	retVal.add(Box.createRigidArea(new Dimension(10,10)));
-    	retVal.add(sortDirection);
-    	retVal.add(lblSortDir);
-    	retVal.add(Box.createRigidArea(new Dimension(10,10)));
-    	retVal.add(columnFiltered);
-    	retVal.add(lblFilterCol);
-    	retVal.add(Box.createRigidArea(new Dimension(10,10)));
-    	retVal.add(keyword);
-    	retVal.add(lblFilterKey);
-    	retVal.add(Box.createRigidArea(new Dimension(10,10)));
-    	retVal.add(recordCount);
+    	lblRowCount.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10));
+    	lblSort.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10));
+    	lblFilter.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10));
+    	
+    	retVal.add(lblSort);
+    	retVal.add(lblFilter);
     	retVal.add(lblRowCount);
+    	
     	retVal.add(Box.createHorizontalGlue());
     	retVal.add(lblStatus);
     	
     	lblStatus.setVisible(false);
-    	columnFiltered.setVisible(false);
-    	keyword.setVisible(false);
     	
     	return retVal;
     }
@@ -301,21 +249,13 @@ public class DataBrowserView {
     public PageButton getBtnLast() {
         return btnLast;
     }
-    
-    public JLabel getLblSortCol() {
-		return lblSortCol;
-	}
 
-	public JLabel getLblSortDir() {
-		return lblSortDir;
+	public JLabel getLblSort() {
+		return lblSort;
 	}
 	
-	public JLabel getLblFilterKey() {
-		return lblFilterKey;
-	}
-
-	public JLabel getLblFilterCol() {
-		return lblFilterCol;
+	public JLabel getLblFilter() {
+		return lblFilter;
 	}
 	
 	public JLabel getLblRowCount(){
@@ -332,6 +272,18 @@ public class DataBrowserView {
 	public void hideStatus(){
 		lblStatus.setText("");
 		lblStatus.setVisible(false);
+	}
+	
+	public void disableSearch(){
+		btnSearch.setEnabled(false);
+		cboSearch.setEnabled(false);
+		txtSearch.setEnabled(false);
+	}
+	
+	public void enableSearch(){
+		btnSearch.setEnabled(true);
+		cboSearch.setEnabled(true);
+		txtSearch.setEnabled(true);
 	}
 
 	public void showTableLoader(){
@@ -357,6 +309,11 @@ public class DataBrowserView {
     	for(PageButton btns : pageBtns){
     		btns.setEnabled(false);
     	}
+    	
+    	btnFirst.setEnabled(false);
+    	btnPrev.setEnabled(false);
+    	btnNext.setEnabled(false);
+    	btnLast.setEnabled(false);
     }
 
     public void hideTableLoader(){
@@ -381,6 +338,11 @@ public class DataBrowserView {
     	for(PageButton btns : pageBtns){
     		btns.setEnabled(true);
     	}
+    	
+    	btnFirst.setEnabled(true);
+    	btnPrev.setEnabled(true);
+    	btnNext.setEnabled(true);
+    	btnLast.setEnabled(true);
     }
     
     @SuppressWarnings("serial")
