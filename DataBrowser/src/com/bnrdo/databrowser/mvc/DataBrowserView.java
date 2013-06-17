@@ -27,6 +27,7 @@ import javax.swing.table.AbstractTableModel;
 import javax.swing.table.JTableHeader;
 
 import com.bnrdo.databrowser.domain.Person;
+import com.bnrdo.databrowser.listener.Disablelable;
 import com.bnrdo.databrowser.listener.PushableTableHeaderListener;
 import com.bnrdo.databrowser.listener.TableSortListener;
 
@@ -52,7 +53,7 @@ public class DataBrowserView {
     private JLabel lblFilterKey;
     private JLabel lblFilterCol;
     private JLabel lblRowCount;
-    private JLabel lblLoadingDS;
+    private JLabel lblStatus;
 
     public DataBrowserView() {
         initUI();
@@ -99,7 +100,7 @@ public class DataBrowserView {
     	final JLabel keyword = new JLabel("Keyword : ");
     	keyword.setFont(statFont);
     	
-    	lblLoadingDS = new JLabel("Loading datasource...");
+    	lblStatus = new JLabel();
     	lblRowCount = new JLabel();
     	lblSortCol = new JLabel();
     	lblSortDir = new JLabel();
@@ -137,9 +138,9 @@ public class DataBrowserView {
     	retVal.add(recordCount);
     	retVal.add(lblRowCount);
     	retVal.add(Box.createHorizontalGlue());
-    	retVal.add(lblLoadingDS);
+    	retVal.add(lblStatus);
     	
-    	lblLoadingDS.setVisible(false);
+    	lblStatus.setVisible(false);
     	columnFiltered.setVisible(false);
     	keyword.setVisible(false);
     	
@@ -321,12 +322,16 @@ public class DataBrowserView {
 		return lblRowCount;
 	}
 	
-	public void showLoadingDSNoti(){
-		lblLoadingDS.setVisible(true);
+	public void showStatus(String status){
+		if(!lblStatus.getText().trim().equals("")) return;
+		
+		lblStatus.setText(status);
+		lblStatus.setVisible(true);
 	}
 	
-	public void hideLoadingDSNoti(){
-		lblLoadingDS.setVisible(false);
+	public void hideStatus(){
+		lblStatus.setText("");
+		lblStatus.setVisible(false);
 	}
 
 	public void showTableLoader(){
@@ -338,11 +343,10 @@ public class DataBrowserView {
     	header.setReorderingAllowed(false);
     	header.setResizingAllowed(false);
     	
-    	//remove listener if already existing
+    	//disable the disable-lable listeners
 		for(MouseListener ms : header.getMouseListeners()){
-			if(ms instanceof PushableTableHeaderListener ||
-					ms instanceof TableSortListener){
-				header.removeMouseListener(ms);
+			if(ms instanceof Disablelable){
+				((Disablelable) ms).setEnabled(false);
 			}
 		}
     	
@@ -360,8 +364,17 @@ public class DataBrowserView {
     	btnSearch.setEnabled(true);
     	cboSearch.setEnabled(true);
     	
-    	tblData.getTableHeader().setReorderingAllowed(true);
-    	tblData.getTableHeader().setResizingAllowed(true);
+    	JTableHeader header = tblData.getTableHeader();
+    	header.setReorderingAllowed(true);
+    	header.setResizingAllowed(true);
+    	
+    	//enable the disable-lable listeners
+		for(MouseListener ms : header.getMouseListeners()){
+			if(ms instanceof Disablelable){
+				((Disablelable) ms).setEnabled(true);
+			}
+		}
+    			
     	tblData.setEnabled(true);
     	tblData.setForeground(Color.BLACK);
     	

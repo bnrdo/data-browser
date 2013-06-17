@@ -4,7 +4,6 @@ import java.beans.PropertyChangeListener;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +34,7 @@ public class DataBrowserModel<E> {
 	private DefaultTableModel pagedTableModel;
 
 	private SwingPropertyChangeSupport propChangeFirer;
-	private ModelService service;
+	private ModelService<E> service;
 	
 	private SORT_ORDER sortOrder;
 	private SQL_TYPE sortType;
@@ -73,9 +72,10 @@ public class DataBrowserModel<E> {
 	}
 
 	public void setPagination(Pagination p) {
+		boolean isEqual = p.equals(pagination);
 		Pagination oldVal = pagination;
 		pagination = p;
-		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_PAGINATION, oldVal, pagination);
+		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_PAGINATION, oldVal, p);
 	}
 	
 	/* setDataTableSource and its overloaded methods are like entry points.
@@ -102,7 +102,7 @@ public class DataBrowserModel<E> {
 		filter = new Filter("", colInfoMap.getPropertyName(0), colInfoMap.getColumnName(0));
 		
 		dsConn = conn;
-		
+		setDataSourceRowCount(queryRowCount());
 		derivePagination(getDataSourceRowCount());
 	}
 
@@ -168,55 +168,50 @@ public class DataBrowserModel<E> {
 	
 	    //silent set the default value for filter (should not notify the listeners)
 	    filter = new Filter("", colInfoMap.getPropertyName(0), colInfoMap.getColumnName(0));
-		
-		derivePagination(list.size());
+		setDataSourceRowCount(queryRowCount());
+		derivePagination(getDataSourceRowCount());
 	}
 	
-	public int getDataSourceRowCount() throws ModelException{
+	public int queryRowCount() throws ModelException{
+		int retVal = 0;
 		
 		if(AppStat.isUsingListDS() && dataSource != null){
 			System.out.println("Base datasource not fully processed. Using its cached size.");
-			int cachedRowCount = dataSource.size();
-			setDataSourceRowCount(cachedRowCount);
-			return cachedRowCount;
-		}
-		
-		String qryCount = QRY_RECORD_COUNT;
-		
-		qryCount = qryCount.replace("filter_col", filter.getCol())
-							.replace("filter_key", filter.getKey());
-		ResultSet rs = null;
-		Statement stmt = null;
-		Connection con = null;
-
-		try {
-			con = (dsConn == null) ? DBroUtil.getConnection() : dsConn;
-			stmt = con.createStatement(); 
-			System.out.println("Count query is : " + qryCount);
-			rs = stmt.executeQuery(qryCount);
+			retVal = dataSource.size();
+		}else{
+			String qryCount = QRY_RECORD_COUNT;
 			
-			while(rs.next()){
-				setDataSourceRowCount((int) rs.getLong(1));
-				System.out.println("Data source count is : " + dataSourceRowCount);
+			qryCount = qryCount.replace("filter_col", filter.getCol())
+								.replace("filter_key", filter.getKey());
+			ResultSet rs = null;
+			Statement stmt = null;
+			Connection con = null;
+	
+			try {
+				con = (dsConn == null) ? DBroUtil.getConnection() : dsConn;
+				stmt = con.createStatement(); 
+				System.out.println("Count query is : " + qryCount);
+				rs = stmt.executeQuery(qryCount);
+				
+				while(rs.next()){
+					retVal = (int) rs.getLong(1);
+					System.out.println("Data source count is : " + dataSourceRowCount);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw new ModelException(e.toString());
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw new ModelException(e.toString());
+			
+			System.out.println("query count is : " + qryCount);
 		}
-		
-		System.out.println("query count is : " + qryCount);
-		
-		return dataSourceRowCount;
+		return retVal;
 	}
 
-	public void setFilter(Filter filtr) {
-		System.out.println("filter is set yow");
+	public void setFilter(Filter filtr){
 		Filter oldVal = filter;
 		filter = filtr;
-		/*just set the filter key and filter col to a new value, then
-		 * calling derivePagination will automatically compute for the number
-		 * of page numbers the filtered data needs
-		 */
+		
+		setDataSourceRowCount(queryRowCount());
 		derivePagination(getDataSourceRowCount());
 		
 		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_FILTER, oldVal, filtr);
@@ -235,6 +230,8 @@ public class DataBrowserModel<E> {
 			private Statement statement = null;
 			private ResultSet rs = null;
 			private ResultSetMetaData rsmd = null;
+			
+			boolean tblShouldClear = true ;
 			
 	        @Override
 	        protected Void doInBackground() throws Exception {
@@ -269,12 +266,9 @@ public class DataBrowserModel<E> {
 	        		System.out.println("query is : " + qry);
 	        		
 	        		setDataForTableLoading(true);
-	        		pagedTableModel.setRowCount(0);
 	        		
 	        		if(AppStat.isUsingListDS()){
-		        		int inserted = INSERTED.intValue();
-		        		System.out.println("INSERTED " + inserted + " records to the embedded DB.");
-		        		if(inserted < to){
+		        		if(INSERTED.intValue() < to){
 		        			System.out.println("INSERTED record size is not enough for the requested ResultSet [from : " + from + " | to : " + to +"]");
 		        			
 		        			while(INSERTED.intValue() < to){
@@ -313,6 +307,15 @@ public class DataBrowserModel<E> {
 	        }
 	        @Override
 	        protected void process(List<List<String>> chunks){
+	        	if(tblShouldClear == true){
+	        		/* clearing of the table should happen in the EDT but not before executing
+	        		 * swing worker since executing it before swingworker will show a cleared table effect
+	        		 * while data is being loaded, which is not desired. the desired behavior is 
+	        		 * view#showTableLoader
+	        		 */
+	        		pagedTableModel.setRowCount(0);
+	        		tblShouldClear = false;
+	        	}
 	        	for(List<String> list : chunks){
 	        		System.out.println("published " + list + " to the table");
 	        		pagedTableModel.addRow(list.toArray());
@@ -396,6 +399,10 @@ public class DataBrowserModel<E> {
 	
 	public String getSortColAsInUI(){
 		return sortColAsInUI;
+	}
+	
+	public int getDataSourceRowCount(){
+		return dataSourceRowCount;
 	}
 
 	public void setSort(String colAsInTable, String colToSort, SORT_ORDER order, SQL_TYPE type) {

@@ -1,6 +1,7 @@
 package com.bnrdo.databrowser;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +39,17 @@ public class Pagination {
 		pageNumsRaw = new int[] { 1 };
 		paginationListeners = new HashMap<String, PaginationListener>();
 	}
-
+	
+	public Pagination(Pagination p){
+		totalPageCount = p.getTotalPagecount();
+		maxExposableCount = p.getMaxExposableCount();
+		currentPageNum = p.getCurrentPageNum();
+		pageNumsExposed = p.getPageNumsExposed();
+		pageNumsRaw = p.getPageNumsRaw();
+		itemsPerPage = p.getItemsPerPage();
+		paginationListeners = p.getPaginationListeners();
+	}
+	
 	public void setTotalPageCount(int num) {
 		totalPageCount = num;
 
@@ -186,10 +197,71 @@ public class Pagination {
 	}
 
 	public int getFirstRawPageNum() {
+		if(pageNumsRaw.length == 0)
+			return 1;
+		
 		return pageNumsRaw[0];
 	}
 
 	public int getLastRawPageNum() {
+		if(pageNumsRaw.length == 0)
+			return 1;
+		
 		return pageNumsRaw[pageNumsRaw.length - 1];
 	}
+	
+	public Map<String, PaginationListener> getPaginationListeners(){
+		return paginationListeners;
+	}
+	
+	public int[] getPageNumsRaw(){
+		return pageNumsRaw;
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + currentPageNum;
+		result = prime * result + itemsPerPage;
+		result = prime * result + maxExposableCount;
+		result = prime * result + Arrays.hashCode(pageNumsExposed);
+		result = prime * result + Arrays.hashCode(pageNumsRaw);
+		result = prime
+				* result
+				+ ((paginationListeners == null) ? 0 : paginationListeners
+						.hashCode());
+		result = prime * result + totalPageCount;
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Pagination other = (Pagination) obj;
+		if (currentPageNum != other.currentPageNum)
+			return false;
+		if (itemsPerPage != other.itemsPerPage)
+			return false;
+		if (maxExposableCount != other.maxExposableCount)
+			return false;
+		if (!Arrays.equals(pageNumsExposed, other.pageNumsExposed))
+			return false;
+		if (!Arrays.equals(pageNumsRaw, other.pageNumsRaw))
+			return false;
+		if (paginationListeners == null) {
+			if (other.paginationListeners != null)
+				return false;
+		} else if (!paginationListeners.equals(other.paginationListeners))
+			return false;
+		if (totalPageCount != other.totalPageCount)
+			return false;
+		return true;
+	}
+
 }

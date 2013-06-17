@@ -14,10 +14,11 @@ import com.bnrdo.databrowser.Constants.SORT_ORDER;
 import com.bnrdo.databrowser.Constants.SQL_TYPE;
 import com.bnrdo.databrowser.mvc.DataBrowserModel;
 
-public class TableSortListener<E> extends MouseAdapter{
+public class TableSortListener<E> extends MouseAdapter implements Disablelable{
 	
 	private JTable table;
 	private DataBrowserModel<E> model;
+	private boolean isEnabled;
 	
 	public TableSortListener(JTable tbl, DataBrowserModel<E> m){
 		table = tbl;
@@ -26,6 +27,8 @@ public class TableSortListener<E> extends MouseAdapter{
 	
 	@Override
 	public void mouseReleased(MouseEvent e) {
+		if(!isEnabled) return;
+		
 		JTableHeader header = table.getTableHeader();
 		Cursor cursor = header.getCursor();
 		boolean isSortableAccdgToPushableListener = true;
@@ -56,5 +59,10 @@ public class TableSortListener<E> extends MouseAdapter{
     			model.setSort(colNameToSort, propNameToSort, SORT_ORDER.ASC, propType);
     		}
     	}
+	}
+
+	@Override
+	public void setEnabled(boolean bool) {
+		isEnabled = bool;
 	}
 }

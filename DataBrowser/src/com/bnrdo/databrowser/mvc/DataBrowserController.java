@@ -48,25 +48,23 @@ public class DataBrowserController<E> implements ModelListener {
 	}
 	
 	@SuppressWarnings("serial")
-	private void setupFilterCategoryInView(){
-		// the search category combobox
-		final ColumnInfoMap colInfo = model.getColInfoMap();
-		final JTextField txtSearch = view.getTxtSearch();
-		final JComboBox cboSearch = view.getCboSearch();
-		final JButton btnSearch = view.getBtnSearch();
+	private void setupFilterCategoryInView(final ColumnInfoMap colInfo, 
+											final JTextField txt, 
+											final JComboBox cbo, 
+											final JButton btn){
 		
-		cboSearch.removeAllItems();
+		cbo.removeAllItems();
 		
 		for(Integer t : colInfo.getKeySet()){
-			cboSearch.addItem(colInfo.getColumnName(t));
+			cbo.addItem(colInfo.getColumnName(t));
 		}
 		
-		btnSearch.setAction(new AbstractAction("Search") {
+		btn.setAction(new AbstractAction("Search") {
 			@Override
 			public void actionPerformed(ActionEvent arg0){
-				int index = cboSearch.getSelectedIndex();
+				int index = cbo.getSelectedIndex();
 				Filter f= new Filter();
-				f.setKey(txtSearch.getText());
+				f.setKey(txt.getText());
 				f.setCol(colInfo.getPropertyName(index));
 				f.setColAsInUI(colInfo.getColumnName(index));
 				model.setFilter(f);
@@ -74,66 +72,43 @@ public class DataBrowserController<E> implements ModelListener {
 		});
 	}
 	
-//	private void setupDataTableInView(final JTable tbl, 
-//											final ColumnInfoMap colInfo, 
-//											final TableDataSourceFormat<E> fmt) {
-//		
-//		Object[] colNames = colInfo.getColumnNames();
-//
-//		/*
-//		 * table's visibility is nothing but an indicator whether the table
-//		 * model is already set, if already set then just reuse the existing
-//		 * one, else set it. then set visible to true to prevent resetting.
-//		 * Table model resue is necessary to prevent the restoration of column
-//		 * adjustment, column arrangement etc. done before calling this method
-//		 * (e.g. sorting)
-//		 */
-//		if(!tbl.isVisible()){
-//			tbl.setModel(new DefaultTableModel(null, colNames));
-//			tbl.setVisible(true);
-//		}
-//		
-//		JTableHeader header = tbl.getTableHeader();
-//		DefaultTableModel tableModel = (DefaultTableModel) tbl.getModel();
-//		TableColumnModel colModel = tbl.getColumnModel();
-//		
-//		PushableTableHeaderRenderer renderer = new PushableTableHeaderRenderer();
-//		PushableTableHeaderListener ptListen = new PushableTableHeaderListener(header, renderer);
-//		
-//		//remove the rows to expose, yes this line clears the jtable
-//		tableModel.setRowCount(0);
-//		
-//		//add the rows to expose
-//		for (E domain : model.getDataTableSourceExposed()){
-//			tableModel.addRow(DBroUtil.extractRowFromFormat(fmt, domain));
-//		}
-//		
-//		//renderer the column header with a button for push effect
-//		for(int i = 0 ; i < colNames.length; i++){
-//			TableColumn tc = colModel.getColumn(i);
-//			tc.setHeaderRenderer(renderer);
-//		}
-//		
-//		//remove listener if already existing
-//		for(MouseListener ms : header.getMouseListeners()){
-//			if(ms instanceof PushableTableHeaderListener ||
-//					ms instanceof TableSortListener){
-//				header.removeMouseListener(ms);
-//			}
-//		}
-//		
-//		for(MouseMotionListener ms : header.getMouseMotionListeners()){
-//			if(ms instanceof PushableTableHeaderListener){
-//				header.removeMouseMotionListener(ms);
-//			}
-//		}
-//		
-//		header.addMouseListener(ptListen);
-//		header.addMouseMotionListener(ptListen);
-//		header.addMouseListener(new TableSortListener<E>(tbl, model));
-//		
-//		tbl.repaint();
-//	}
+	private void setupDataTableInView(final JTable tbl, 
+											final ColumnInfoMap colInfo, 
+											final TableDataSourceFormat<E> fmt) {
+		
+	
+		JTableHeader header = tbl.getTableHeader();
+		TableColumnModel colModel = tbl.getColumnModel();
+		
+		PushableTableHeaderRenderer renderer = new PushableTableHeaderRenderer();
+		PushableTableHeaderListener ptListen = new PushableTableHeaderListener(header, renderer);
+			
+		//renderer the column header with a button for push effect
+		for(int i = 0 ; i < colModel.getColumnCount(); i++){
+			TableColumn tc = colModel.getColumn(i);
+			tc.setHeaderRenderer(renderer);
+		}
+		
+		//remove listener if already existing
+		for(MouseListener ms : header.getMouseListeners()){
+			if(ms instanceof PushableTableHeaderListener ||
+					ms instanceof TableSortListener){
+				header.removeMouseListener(ms);
+			}
+		}
+		
+		for(MouseMotionListener ms : header.getMouseMotionListeners()){
+			if(ms instanceof PushableTableHeaderListener){
+				header.removeMouseMotionListener(ms);
+			}
+		}
+		
+		header.addMouseListener(ptListen);
+		header.addMouseMotionListener(ptListen);
+		header.addMouseListener(new TableSortListener<E>(tbl, model));
+		
+		tbl.repaint();
+	}
 
 	@SuppressWarnings("serial")
 	private void setupPageNumbersInView(int[] pages) {
@@ -176,31 +151,21 @@ public class DataBrowserController<E> implements ModelListener {
 				}
 			});
 		}
-		
 	}
 
 	private void pageButtonIsClicked(Object where){
-		final Pagination p = model.getPagination();
+		final Pagination p = new Pagination(model.getPagination());
 		
 		if(where instanceof Integer){
-			//if(p.getCurrentPageNum() == ((Integer)where))
-			//	return;
-			
 			p.setCurrentPageNum((Integer)where);
 		}else if(where instanceof String){
-			/*if(p.getCurrentPageNum() == p.getFirstRawPageNum() && where.toString().equals("FIRST") ||
-					p.getCurrentPageNum() == p.getLastRawPageNum() && where.toString().equals("LAST"))
-				return;*/
-			
 			p.setCurrentPageNum((String)where);
 		}else {
 			throw new ModelException("Invalid page click destination.");
 		}
 		
-		//setup the new page set in view 
-		setupPageNumbersInView(p.getPageNumsExposed());
-		changeCurrentPageNum(p.getCurrentPageNum());
-		
+		model.setPagination(p);
+ 
 		//computation for offset and limit of sql query
 		int itemsPerPage = p.getItemsPerPage();
 		int itemCount = model.getDataSourceRowCount();
@@ -215,17 +180,6 @@ public class DataBrowserController<E> implements ModelListener {
 		System.out.println("from : " + from);
 		System.out.println("to : " + to);
 		
-		
-		
-		/* getscrolledsource might return a modelexception if the datasource type
-		 * is list. the list will be persisted to this app's DB using batch inserts.
-		 * if the batch insert is not yet done and the user requested for the last page,
-		 * the model will be thrown since the records for the last page is not yet inserted
-		 */
-		
-		/*model.setDataForTableLoading(true);
-		model.setDataTableSourceExposed(model.getScrolledSource(from, to));
-    	model.setDataForTableLoading(false);*/
 		model.populateTableWithScrolledSource(from, to);
 	}
 	
@@ -260,12 +214,15 @@ public class DataBrowserController<E> implements ModelListener {
 		String propName = evt.getPropertyName();
 		
 		if(Constants.ModelFields.FN_PAGINATION.equalsIgnoreCase(propName)){
-			Pagination p = model.getPagination();
+			Pagination newVal = (Pagination) evt.getNewValue();
 			
-			setupPageNumbersInView(p.getPageNumsExposed());
+			setupPageNumbersInView(newVal.getPageNumsExposed());
+			changeCurrentPageNum(newVal.getCurrentPageNum());
 		}else if(Constants.ModelFields.FN_SORT_ORDER.equalsIgnoreCase(propName)){
 			Pagination p = model.getPagination();
 			PageButton[] btns = view.getPageBtns();
+			
+			view.showStatus("Sorting by " + model.getSortColAsInUI() + " " + model.getSortOrder().toString());
 			
 			if(btns.length > 0){
 				pageButtonIsClicked(p.getCurrentPageNum());
@@ -273,10 +230,11 @@ public class DataBrowserController<E> implements ModelListener {
 			
 			view.getLblSortCol().setText(model.getSortColAsInUI());
 			view.getLblSortDir().setText(model.getSortOrder().toString());
+			 
 		}else if(Constants.ModelFields.FN_FILTER.equalsIgnoreCase(propName)){
-			PageButton[] btns = view.getPageBtns();
+			view.showStatus("Filtering by " + model.getSortColAsInUI() + " Keyword : " + model.getSortOrder().toString());
 			
-			if(btns.length == 0){
+			if(view.getPageBtns().length == 0){
 				model.getPagedTableModel().setRowCount(0);
 			}else{
 				pageButtonIsClicked(1);
@@ -288,23 +246,32 @@ public class DataBrowserController<E> implements ModelListener {
 			view.getLblFilterKey().setText(f.getKey());
 			
 		}else if(Constants.ModelFields.FN_COL_INFO_MAP.equalsIgnoreCase(propName)){
-			setupFilterCategoryInView();
-			DefaultTableModel mod = new DefaultTableModel(model.getColInfoMap().getColumnNames(), 0);
-			
-			model.setPagedTableModel(mod);
-			view.getDataTable().setModel(model.getPagedTableModel());
+			ColumnInfoMap newVal = (ColumnInfoMap) evt.getNewValue();
+			model.setPagedTableModel(new DefaultTableModel(null, newVal.getColumnNames()));
 		}else if(Constants.ModelFields.FN_IS_TABLE_LOADING.equalsIgnoreCase(propName)){
 			boolean newVal = (Boolean) evt.getNewValue();
 			
-			if(newVal == true) view.showTableLoader();
-			else view.hideTableLoader();
+			if(newVal == true){
+				view.showTableLoader();
+			}else{
+				view.hideTableLoader();
+				view.hideStatus();
+			}
 		}else if(Constants.ModelFields.FN_DATA_TABLE_SOURCE_ROW_COUNT.equalsIgnoreCase(propName)){
 			view.getLblRowCount().setText(Integer.toString((Integer)evt.getNewValue()));
 		}else if(Constants.ModelFields.FN_IS_DS_LOADING.equalsIgnoreCase(propName)){
 			boolean newVal = (Boolean) evt.getNewValue();
 			
-			if(newVal == true) view.showLoadingDSNoti();
-			else view.hideLoadingDSNoti();
+			if(newVal == true) view.showStatus("Loading datasource");
+			else view.hideStatus();
+		}else if(Constants.ModelFields.FN_PAGED_TABLE_MODEL.equalsIgnoreCase(propName)){
+			DefaultTableModel newVal = (DefaultTableModel) evt.getNewValue();
+			ColumnInfoMap colInfo = model.getColInfoMap();
+			JTable tbl = view.getDataTable();
+			
+			tbl.setModel(newVal);
+			setupDataTableInView(tbl, colInfo, model.getTableDataSourceFormat());
+			setupFilterCategoryInView(colInfo, view.getTxtSearch(), view.getCboSearch(), view.getBtnSearch());
 		}
 		
 		//the following fragments should also be put in place ok.

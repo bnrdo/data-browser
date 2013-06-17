@@ -11,10 +11,11 @@ import com.bnrdo.databrowser.Constants;
 import com.bnrdo.databrowser.PushableTableHeaderRenderer;
 
 
-public class PushableTableHeaderListener extends MouseAdapter{
+public class PushableTableHeaderListener extends MouseAdapter implements Disablelable{
 	private JTableHeader header;
 	private PushableTableHeaderRenderer renderer;
 	private boolean isSortable;
+	private boolean isEnabled;
 
 	public PushableTableHeaderListener(JTableHeader header, PushableTableHeaderRenderer renderer) {
 		this.header = header;
@@ -23,6 +24,8 @@ public class PushableTableHeaderListener extends MouseAdapter{
 	} 
 
 	public void mousePressed(MouseEvent e) {
+		if(!isEnabled) return;
+		
 		Cursor cursor = header.getCursor();
 		
 		if(cursor.getType() == Cursor.E_RESIZE_CURSOR)
@@ -36,18 +39,26 @@ public class PushableTableHeaderListener extends MouseAdapter{
 	}
 
 	public void mouseReleased(MouseEvent e) {
+		if(!isEnabled) return;
+		
 		renderer.setPressedColumn(-1); // clear
 		header.repaint();
 	}
 	
 	public void mouseDragged(MouseEvent arg0) {
-		isSortable = false;
+		if(!isEnabled) return;
 		
+		isSortable = false;
 		renderer.setPressedColumn(-1);
 		header.repaint();
 	}
 	
 	public boolean isSortable(){
 		return isSortable;
+	}
+
+	@Override
+	public void setEnabled(boolean bool) {
+		isEnabled = bool;
 	}
 }

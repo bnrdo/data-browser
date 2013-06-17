@@ -1,7 +1,7 @@
 package com.bnrdo.databrowser;
 
 public class Constants{
-	public enum SQL_TYPE {
+	public enum SQL_TYPE{
 		STRING, INTEGER, BIGDECIMAL, TIMESTAMP, BOOLEAN, NUMBER, VARCHAR2, FLOAT;
 	}
 	public enum SORT_ORDER{
@@ -18,5 +18,6 @@ public class Constants{
 		public static final String FN_FILTER = "filterKey";
 		public static final String FN_IS_TABLE_LOADING = "isTableLoading";
 		public static final String FN_IS_DS_LOADING = "isDataSourceLoading";
+		public static final String FN_DS_TYPE = "dsType";
 	}
 }
