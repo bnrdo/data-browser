@@ -33,7 +33,6 @@ public class Pagination {
 
 	public Pagination() {
 		totalPageCount = 0;
-		maxExposableCount = 0;
 		currentPageNum = 1;
 		pageNumsExposed = new int[] { 0 };
 		pageNumsRaw = new int[] { 1 };

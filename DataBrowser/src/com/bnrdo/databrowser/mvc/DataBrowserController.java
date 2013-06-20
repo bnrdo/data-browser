@@ -4,9 +4,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.beans.PropertyChangeEvent;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import javax.swing.AbstractAction;
 import javax.swing.ImageIcon;
@@ -15,9 +12,6 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JTable;
 import javax.swing.JTextField;
-import javax.swing.SwingWorker;
-import javax.swing.event.TableModelEvent;
-import javax.swing.event.TableModelListener;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumn;
@@ -29,10 +23,8 @@ import com.bnrdo.databrowser.DBroUtil;
 import com.bnrdo.databrowser.Filter;
 import com.bnrdo.databrowser.PushableTableHeaderRenderer;
 import com.bnrdo.databrowser.Pagination;
-import com.bnrdo.databrowser.TableDataSourceFormat;
 import com.bnrdo.databrowser.exception.ModelException;
 import com.bnrdo.databrowser.listener.ModelListener;
-import com.bnrdo.databrowser.listener.PaginationListener;
 import com.bnrdo.databrowser.listener.PushableTableHeaderListener;
 import com.bnrdo.databrowser.listener.TableSortListener;
 import com.bnrdo.databrowser.mvc.DataBrowserView.PageButton;
@@ -76,8 +68,7 @@ public class DataBrowserController<E> implements ModelListener {
 	}
 	
 	private void setupDataTableInView(final JTable tbl, 
-											final ColumnInfoMap colInfo, 
-											final TableDataSourceFormat<E> fmt) {
+											final ColumnInfoMap colInfo) {
 		
 	
 		JTableHeader header = tbl.getTableHeader();
@@ -184,7 +175,7 @@ public class DataBrowserController<E> implements ModelListener {
 		System.out.println("from : " + from);
 		System.out.println("to : " + to);
 		
-		model.populateTableWithScrolledSource(from, to);
+		model.populateViewTableWithScrolledSource(from, to);
 	}
 	
 	
@@ -219,14 +210,27 @@ public class DataBrowserController<E> implements ModelListener {
 		if(Constants.ModelFields.FN_PAGINATION.equalsIgnoreCase(propName)){
 			Pagination newVal = (Pagination) evt.getNewValue();
 			setupPageNumbersInView(newVal.getPageNumsExposed(), newVal.getCurrentPageNum());
+			
+			JLabel lblRowCount = view.getLblRowCount();
+			String currText = lblRowCount.getText();
+			String info = " | " + DBroUtil.moneyFormat(newVal.getItemsPerPage()) + "/page | " + DBroUtil.moneyFormat(newVal.getTotalPagecount()) + " page" + (newVal.getTotalPagecount() <= 1 ? "" : "s");
+			
+			if(currText.contains("|")) 
+				lblRowCount.setText(currText.substring(0, currText.indexOf("|")-1) + info);
+			else 
+				lblRowCount.setText(currText + info);
+			
+			lblRowCount.setVisible(model.isRowCountDetailsShowable());
+			
 		}else if(Constants.ModelFields.FN_SORT_ORDER.equalsIgnoreCase(propName)){
 			
 			if(view.getPageBtns().length > 0){
 				Pagination p = model.getPagination();
 				pageButtonIsClicked(p.getCurrentPageNum());
 				
-				view.showStatus("Sorting by " + model.getSortColAsInUI() + " " + model.getSortOrder().toString());
-				
+				if(model.isStatusShowable())
+					view.showStatus("Sorting by " + model.getSortColAsInUI() + " " + model.getSortOrder().toString());
+			
 				JLabel lblSort = view.getLblSort();
 				lblSort.setText(model.getSortColAsInUI());
 				if(model.getSortOrder().equals(Constants.SORT_ORDER.ASC)){
@@ -236,15 +240,16 @@ public class DataBrowserController<E> implements ModelListener {
 					lblSort.setIcon(new ImageIcon(getClass().getResource("/sort_desc_16x16.png")));
 					lblSort.setToolTipText("Column Sorted : " + lblSort.getText() + " | Sort Order : Descending");
 				}
-				//view.getLblSortDir().setText(model.getSortOrder().toString());
+				
+				lblSort.setVisible(model.isSortDetailsShowable());
 			} 
 		}else if(Constants.ModelFields.FN_FILTER.equalsIgnoreCase(propName)){
-			view.showStatus("Filtering by " + model.getSortColAsInUI() + " Keyword : " + model.getSortOrder().toString());
+			view.showStatus("Filtering " + model.getSortColAsInUI() + "  '" + view.getTxtSearch().getText() + "'");
 			pageButtonIsClicked(1);
 			
 			Filter f = model.getFilter();
 			JLabel lblFilter = view.getLblFilter();
-			
+
 			if(f.getKey().equals("")){
 				lblFilter.setVisible(false);
 			}else{
@@ -252,7 +257,8 @@ public class DataBrowserController<E> implements ModelListener {
 				lblFilter.setIcon(new ImageIcon(getClass().getResource("/filter_16x16.gif")));
 				lblFilter.setToolTipText("Column Filtered : " + lblFilter.getText().split(":")[0] 
 												+ " | Keyword : " + lblFilter.getText().split(":")[1]);
-				lblFilter.setVisible(true);
+				
+				lblFilter.setVisible(model.isFilterDetailsShowable());
 			}
 		}else if(Constants.ModelFields.FN_COL_INFO_MAP.equalsIgnoreCase(propName)){
 			ColumnInfoMap newVal = (ColumnInfoMap) evt.getNewValue();
@@ -268,18 +274,26 @@ public class DataBrowserController<E> implements ModelListener {
 			}
 		}else if(Constants.ModelFields.FN_DATA_TABLE_SOURCE_ROW_COUNT.equalsIgnoreCase(propName)){
 			JLabel lblRowCount = view.getLblRowCount();
+			int newVal = ((Integer)evt.getNewValue()).intValue();
+			
 			lblRowCount.setIcon(new ImageIcon(getClass().getResource("/row_count2_16x16.png")));
-			lblRowCount.setText(Integer.toString((Integer)evt.getNewValue()));
+			lblRowCount.setText(DBroUtil.moneyFormat(Integer.toString(newVal))
+						+ " row" + (newVal == 1 ? "" : "s") + " returned");
 			lblRowCount.setToolTipText("Total Record Count Returned : " + lblRowCount.getText());
+			
+			lblRowCount.setVisible(model.isRowCountDetailsShowable());
+			
 		}else if(Constants.ModelFields.FN_IS_DS_LOADING.equalsIgnoreCase(propName)){
 			boolean newVal = (Boolean) evt.getNewValue();
 			
 			if(newVal == true){
 				view.disableSearch();
-				view.showStatus("Loading datasource");
+				if(model.isStatusShowable())
+					view.showStatus("Loading datasource");
 			}else{
 				view.enableSearch();
-				view.hideStatus();
+				if(model.isStatusShowable())
+					view.hideStatus();
 			}
 		}else if(Constants.ModelFields.FN_PAGED_TABLE_MODEL.equalsIgnoreCase(propName)){
 			DefaultTableModel newVal = (DefaultTableModel) evt.getNewValue();
@@ -287,10 +301,9 @@ public class DataBrowserController<E> implements ModelListener {
 			JTable tbl = view.getDataTable();
 			
 			tbl.setModel(newVal);
-			setupDataTableInView(tbl, colInfo, model.getTableDataSourceFormat());
+			setupDataTableInView(tbl, colInfo);
 			setupFilterCategoryInView(colInfo, view.getTxtSearch(), view.getCboSearch(), view.getBtnSearch());
 		}
-		
 		//the following fragments should also be put in place ok.
 		//|| DataBrowserModel.FN_DATA_TABLE_SOURCE_FORMAT.equalsIgnoreCase(propName)
 		//|| DataBrowserModel.FN_COL_INFO_MAP.equalsIgnoreCase(propName)[ok]

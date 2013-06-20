@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.bnrdo.databrowser.Constants.SQL_TYPE;
+import com.bnrdo.databrowser.Constants.JAVA_TYPE;
 
 public class ColumnInfoMap {
 	
@@ -15,6 +15,37 @@ public class ColumnInfoMap {
 	
 	public ColumnInfoMap(){
 		map = new HashMap<Integer, List<String>>();
+	}
+	public void putInfo(int index, String colName, String propName, JAVA_TYPE propType){
+		List<String> list = map.get(index);
+		String typeStr = propType.toString();
+		
+		if(list == null){
+			List<String> newList = new ArrayList<String>();
+			newList.add(colName);
+			newList.add(propName);
+			newList.add(typeStr);
+			map.put(index, newList);
+		}else{
+			list.set(0, colName);
+			list.set(1, propName);
+			list.set(2, typeStr);
+		}
+	}
+	public void putInfo(int index, String colName, String propName){
+		List<String> list = map.get(index);
+		
+		if(list == null){
+			List<String> newList =new ArrayList<String>();
+			newList.add(colName);
+			newList.add(propName);
+			newList.add("");
+			map.put(index, newList);
+		}else{
+			list.set(0, colName);
+			list.set(1, propName);
+			list.set(2, "");
+		}
 	}
 	public void putColumnName(int index, String colName){
 		List<String> list = map.get(index);
@@ -43,7 +74,7 @@ public class ColumnInfoMap {
 			list.set(1, propName);
 		}
 	}
-	public void putPropertyType(int index, SQL_TYPE type){
+	public void putPropertyType(int index, JAVA_TYPE type){
 		List<String> list = map.get(index);
 		String typeStr = type.toString();
 		
@@ -63,8 +94,8 @@ public class ColumnInfoMap {
 	public String getPropertyName(Integer index){
 		return map.get(index).get(1);
 	}
-	public SQL_TYPE getPropertyType(int index){
-		return SQL_TYPE.valueOf(map.get(index).get(2));
+	public JAVA_TYPE getPropertyType(int index){
+		return JAVA_TYPE.valueOf(map.get(index).get(2));
 	}
 	public String[] getColumnNames(){
 		String[] retVal = new String[map.size()];

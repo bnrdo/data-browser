@@ -1,129 +1,9 @@
 package com.bnrdo.databrowser;
 
-import java.awt.BorderLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.text.ParseException;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import java.util.Random;
 
-import javax.swing.JFrame;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
-
-import com.bnrdo.databrowser.Constants.SQL_TYPE;
-import com.bnrdo.databrowser.DataBrowser;
-import com.bnrdo.databrowser.domain.Person;
-import com.bnrdo.databrowser.format.PersonFormat;
-
-public class DataBrowserSampleUsage2 {
-	public static void main(String[] args) {
-		SwingUtilities.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					//UIManager.setLookAndFeel("com.jgoodies.looks.plastic.PlasticXPLookAndFeel");
-					UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
-				} catch (Exception e){
-					e.printStackTrace();
-				}
-				
-				DataBrowserSampleUsage2 creator = new DataBrowserSampleUsage2();
-
-				JFrame frame = new JFrame("Demo");
-				frame.getContentPane().setLayout(new BorderLayout());
-				frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-				frame.getContentPane().add(creator.createDataBrowser(), BorderLayout.CENTER);
-				frame.pack();
-				frame.setVisible(true);
-			}
-		});
-	}
-	
-	private DataBrowser<Person> createDataBrowser() {
-		final DataBrowser<Person> dbrowse = new DataBrowser<Person>();
-		//final List<Person> source =  generateRandomSource();
-		final ColumnInfoMap colInfoMap = new ColumnInfoMap();
-		
-		colInfoMap.putColumnName(0, "First Name");
-		colInfoMap.putColumnName(1, "Last Name");
-		colInfoMap.putColumnName(2, "Birthday");
-		colInfoMap.putColumnName(3, "Age");
-		colInfoMap.putColumnName(4, "Occupation");
-		
-		colInfoMap.putPropertyName(0, "firstName");
-		colInfoMap.putPropertyName(1, "lastName");
-		colInfoMap.putPropertyName(2, "birthDay");
-		colInfoMap.putPropertyName(3, "age");
-		colInfoMap.putPropertyName(4, "occupation");
-		
-		colInfoMap.putPropertyType(0, SQL_TYPE.STRING);
-		colInfoMap.putPropertyType(1, SQL_TYPE.STRING);
-		colInfoMap.putPropertyType(2, SQL_TYPE.TIMESTAMP);
-		colInfoMap.putPropertyType(3, SQL_TYPE.INTEGER);
-		colInfoMap.putPropertyType(4, SQL_TYPE.STRING);
-		
-		Connection con = null;
-		Statement stmt = null;
-		try {
-			Class.forName("org.hsqldb.jdbcDriver");
-			con = DriverManager.getConnection("jdbc:hsqldb:mem:data-browser", "sa", "");
-			//con = DriverManager.getConnection("jdbc:hsqldb:file:C:\\Users\\ut1p98\\Desktop\\db\\data-browser", "sa", "");
-			//con = DriverManager.getConnection("jdbc:hsqldb:file:C:\\Users\\ut1p98\\Desktop\\db\\data-browser", "sa", "");
-			stmt = con.createStatement();
-			// table name = data_browser_persist
-			stmt.execute("DROP TABLE IF EXISTS employee;");
-			stmt.execute("SET IGNORECASE TRUE;");
-			stmt.execute("CREATE CACHED TABLE employee (" +
-					"id integer not null primary key," +
-					"firstName varchar(256) not null," +
-					"lastName varchar(256) not null," +
-					"birthday timestamp," +
-					"age integer," +
-					"occupation varchar(256) not null)");
-			String qry = "INSERT INTO employee VALUES(?,?,?,?,?,?)";
-			PreparedStatement ps = con.prepareStatement(qry);
-			for(int i = 0; i <1000; i++){
-				ps.setInt(1, i);
-				ps.setString(2, getRandomFirstName());
-				ps.setString(3, getRandomLastName());
-				ps.setDate(4, getRandomDate());
-				ps.setInt(5, getRandomAge());
-				ps.setString(6, getRandomOccupation());
-				ps.addBatch();
-				if(i%1000 == 0 || i == 999){
-					ps.executeBatch();	
-				}
-			}
-			
-			//stmt.execute(DBroUtil.translateColInfoMapToCreateDbQuery(colInfoMap));
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		}  catch(SQLException e){
-			e.printStackTrace();
-		}
-		
-		dbrowse.setColInfoMap(colInfoMap);
-		dbrowse.setTableDataSourceFormat(new PersonFormat());
-		dbrowse.setDataTableSource(con, "employee");
-		dbrowse.create();
-		
-		/*dbrowse.getTestButton().addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				//dbrowse.setDataTableSource(generateRandomSource());
-				//dbrowse.create();
-			}
-		});*/
-		
-		return dbrowse;
-	}
-	
+public class DummyMgr {
 	public String getRandomFirstName(){
 		String[] names = new String[]{"Mario",	"Petey",	"Anna",		"Paul",	"Anna",		"Gail",		"Paige",	"Bob",		"Walter",	"Nick",
 									"Barb",		"Buck",		"Greta",	"Ira",	"Shonda",	"Brock",	"Maya",		"RickShea",	"Monty",	"Sal",
@@ -191,5 +71,3 @@ public class DataBrowserSampleUsage2 {
 		return occupations[ran];
 	}
 }
-
-

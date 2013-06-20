@@ -6,21 +6,22 @@ import java.util.List;
 
 import org.apache.commons.lang3.mutable.MutableInt;
 
+import com.bnrdo.databrowser.AppStat;
 import com.bnrdo.databrowser.ColumnInfoMap;
-import com.bnrdo.databrowser.TableDataSourceFormat;
+import com.bnrdo.databrowser.Constants.JAVA_TYPE;
+import com.bnrdo.databrowser.format.ListSourceFormat;
 
 public class ModelService<E> {
-	public void populateTable(Statement stmt, List<E> source, TableDataSourceFormat<E> fmt, MutableInt ctr) throws SQLException{
+	public void populateDBTable(String tblName, Statement stmt, List<E> source, ListSourceFormat<E> fmt, MutableInt ctr) throws SQLException{
 		int countForLog = 0;
 		int countForINSERTED = 0;
 		StringBuilder bdr = new StringBuilder();
-		bdr.append("INSERT INTO data_browser_persist VALUES ");
+		bdr.append("INSERT INTO " + tblName + " VALUES ");
 		
 		for(E e : source){
 			bdr.append("(");
     		for(int i = 0; i < fmt.getColumnCount(); i++){
     			bdr.append("'").append(fmt.getValueAt(i, e)).append("', ");
-    			//System.out.print(fmt.getValueAt(i, e) + " ");
     		}
     		//System.out.println();
     		bdr.replace(bdr.length()-2, bdr.length(), "");
@@ -35,27 +36,21 @@ public class ModelService<E> {
     			
     			countForINSERTED = 0;
     			bdr = new StringBuilder();
-    			bdr.append("INSERT INTO data_browser_persist VALUES ");
+    			bdr.append("INSERT INTO " + tblName + " VALUES ");
     		}
     		//source.remove(e);
     	}
 		System.out.println(countForLog + " rows succesfully inserted!");
     }
-	public String translateColInfoMapToCreateDbQuery(ColumnInfoMap colInfoMap){
+	public String translateColInfoMapToCreateTableSQL(String tblName, ColumnInfoMap colInfoMap){
     	StringBuilder retVal = new StringBuilder();
-    	boolean primarySet = false;
     	
-    	retVal.append("CREATE MEMORY TABLE data_browser_persist ( ");
+    	retVal.append("CREATE MEMORY TABLE " + tblName + " ( ");
     	
     	for(Integer i : colInfoMap.getKeySet()){
     		if(colInfoMap.hasIndex(i)){
     			retVal.append(colInfoMap.getPropertyName(i));
-    			if(!primarySet){
-    				retVal.append(" varchar(256) not null, ");
-    				primarySet = true;
-    			}else{
-    				retVal.append(" varchar(256) not null, ");
-    			}
+    			retVal.append(" " + getHSQLTypeFromSQLType(colInfoMap.getPropertyType(i)) + " not null, ");
     		}
     	}
     	retVal.replace(retVal.length()-2, retVal.length(), "");
@@ -63,5 +58,41 @@ public class ModelService<E> {
     	
     	return retVal.toString();
     }
-	
+	private String getHSQLTypeFromSQLType(JAVA_TYPE type){
+		String retVal = "VARCHAR(1000)";
+		
+		switch(type){
+			case INTEGER:
+				retVal = "INTEGER";
+				break;
+			case DATE:
+				retVal = "DATE";
+				break;
+			case DATETIME:
+				retVal = "TIMESTAMP";
+				break;
+			case BIGDECIMAL:
+				retVal = "NUMERIC";
+				break;
+			case BOOLEAN:
+				retVal = "BOOLEAN";
+				break;
+			case FLOAT:
+				retVal = "FLOAT";
+				break;
+			case DOUBLE:
+				retVal = "DOUBLE";
+				break;
+			case LONG:
+				retVal = "BIGINT";
+				break;
+			case OBJECT:
+				retVal = "OTHER";
+				break;
+			default:
+				break;
+		}
+		
+		return retVal;
+	}
 }

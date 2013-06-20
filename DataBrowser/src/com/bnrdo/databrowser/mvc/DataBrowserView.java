@@ -71,17 +71,26 @@ public class DataBrowserView {
     	retVal.setLayout(new BoxLayout(retVal, BoxLayout.LINE_AXIS));
     	retVal.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
     	
-    	Font statFont = UIManager.getFont("Label.font");
-    	statFont = statFont.deriveFont(Font.BOLD, statFont.getSize()-2);
+    	Font statFont = new Font("Arial", Font.PLAIN, 11);
     	
     	lblStatus = new JLabel();
     	lblRowCount = new JLabel();
     	lblSort = new JLabel();
     	lblFilter = new JLabel();
+
+    	lblStatus.setFont(statFont);
+    	lblRowCount.setFont(statFont);
+    	lblSort.setFont(statFont);
+    	lblFilter.setFont(statFont);
     	
-    	lblRowCount.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10));
-    	lblSort.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10));
-    	lblFilter.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10));
+    	lblStatus.setVisible(false);
+    	lblRowCount.setVisible(false);
+    	lblSort.setVisible(false);
+    	lblFilter.setVisible(false);
+    	
+    	//lblRowCount.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10));
+    	lblSort.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 3));
+    	lblFilter.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 7));
     	
     	retVal.add(lblSort);
     	retVal.add(lblFilter);
@@ -310,10 +319,10 @@ public class DataBrowserView {
     		btns.setEnabled(false);
     	}
     	
-    	btnFirst.setEnabled(false);
-    	btnPrev.setEnabled(false);
-    	btnNext.setEnabled(false);
-    	btnLast.setEnabled(false);
+    	if(btnFirst != null) btnFirst.setEnabled(false);
+    	if(btnPrev != null) btnPrev.setEnabled(false);
+    	if(btnNext != null) btnNext.setEnabled(false);
+    	if(btnLast != null) btnLast.setEnabled(false);
     }
 
     public void hideTableLoader(){
@@ -339,10 +348,10 @@ public class DataBrowserView {
     		btns.setEnabled(true);
     	}
     	
-    	btnFirst.setEnabled(true);
-    	btnPrev.setEnabled(true);
-    	btnNext.setEnabled(true);
-    	btnLast.setEnabled(true);
+    	if(btnFirst != null) btnFirst.setEnabled(true);
+    	if(btnPrev != null) btnPrev.setEnabled(true);
+    	if(btnNext != null) btnNext.setEnabled(true);
+    	if(btnLast != null) btnLast.setEnabled(true);
     }
     
     @SuppressWarnings("serial")

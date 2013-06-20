@@ -15,6 +15,7 @@ import org.hsqldb.DatabaseManager;
 
 import com.bnrdo.databrowser.Constants.SORT_ORDER;
 import com.bnrdo.databrowser.exception.ModelException;
+import com.bnrdo.databrowser.format.ListSourceFormat;
 import com.bnrdo.databrowser.mvc.DataBrowserController;
 import com.bnrdo.databrowser.mvc.DataBrowserModel;
 import com.bnrdo.databrowser.mvc.DataBrowserView;
@@ -27,11 +28,18 @@ public class DataBrowser<E> extends JPanel {
     private DataBrowserView view;
     
     private List<E> source;
-    private TableDataSourceFormat<E> sourceFormat;
+    private ListSourceFormat<E> sourceFormat;
+    
     private ColumnInfoMap colInfoMap;
+    private DBDataSource dbDataSource;
+    
+    private int maxPageCountExposable;
+    private int rowCountPerPage;
 
-    private Connection dsConn;
-    private String tableName;
+	private boolean isStatusShowable;
+	private boolean isSortDetailsShowable;
+	private boolean isFilterDetailsShowable;
+	private boolean isRowCountDetailsShowable;
     
     public DataBrowser() {
         view = new DataBrowserView();
@@ -39,22 +47,45 @@ public class DataBrowser<E> extends JPanel {
 
         controller = new DataBrowserController<E>(view, model);
         
+        maxPageCountExposable = 7;
+        rowCountPerPage = 10;
+        
+        isStatusShowable = true;
+    	isSortDetailsShowable = true;
+    	isFilterDetailsShowable = true;
+    	isRowCountDetailsShowable = true;
+        
         setLayout(new BorderLayout());
         add(view.getUI(), BorderLayout.CENTER);
     }
 
-    public void setDataTableSource(List<E> src){
-    	source = src;
-    	dsConn = null;
+    public void setStatusVisible(boolean bool){
+    	isStatusShowable = bool;
     }
     
-    public void setDataTableSource(Connection conn, String tblName){
-    	dsConn = conn;
-    	tableName = tblName;
+    public void setSortDetailsVisible(boolean bool){
+    	isSortDetailsShowable = bool;
+    }
+    
+    public void setFilterDetailsVisible(boolean bool){
+    	isFilterDetailsShowable = bool;
+    }
+    
+    public void setRowCountDetailsVisible(boolean bool){
+    	isRowCountDetailsShowable = bool;
+    }
+    
+    public void setDataSource(List<E> src){
+    	source = src;
+    	dbDataSource = null;
+    }
+    
+    public void setDataSource(DBDataSource ds){
+    	dbDataSource = ds;
     	source = null;
     }
     
-    public void setTableDataSourceFormat(TableDataSourceFormat<E> fmt){
+    public void setTableDataSourceFormat(ListSourceFormat<E> fmt){
     	sourceFormat = fmt;
     }
     
@@ -62,27 +93,43 @@ public class DataBrowser<E> extends JPanel {
     	colInfoMap = map;
     }
     
-    public void create(){
+    public void setMaxPageCountExposable(int num) {
+    	maxPageCountExposable = num;
+	}
+
+	public void setRowCountPerPage(int num) {
+		rowCountPerPage = num;
+	}
+
+	public void create(){
     	validateInput();
+    	
+    	model.setStatusShowable(isStatusShowable);
+    	model.setSortDetailsShowable(isSortDetailsShowable);
+    	model.setFilterDetailsShowable(isFilterDetailsShowable);
+    	model.setRowCountDetailsShowable(isRowCountDetailsShowable);
     	
     	model.setColInfoMap(colInfoMap);    		
     	model.setTableDataSourceFormat(sourceFormat);
+    	model.setMaxExposableCount(maxPageCountExposable);
+    	model.setItemsPerPage(rowCountPerPage);
     	
-    	if(dsConn == null) model.setDataTableSource(source);
-    	else if(source == null) model.setDataTableSource(dsConn, tableName);
+    	if(dbDataSource == null) 
+    		model.setDataSource(source);
+    	else if(source == null) 
+    		model.setDataSource(dbDataSource);
     	
     	model.setSort(colInfoMap.getColumnName(0), 
     					colInfoMap.getPropertyName(0), 
-    					SORT_ORDER.ASC, 
-    					colInfoMap.getPropertyType(0));
+    					SORT_ORDER.ASC);
     }
     
     private void validateInput(){
     	if(colInfoMap == null)
     		throw new ModelException("Column info map should not be null");
-    	else if(sourceFormat == null)
-    		throw new ModelException("Format for the data source should not be null");
-    	else if(source == null && dsConn == null)
+    	else if(sourceFormat == null && source != null)
+    		throw new ModelException("Format for the list datasource should not be null");
+    	else if(source == null && dbDataSource == null)
     		throw new ModelException("You should provide a valid datasource");
     }
     
