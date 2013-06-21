@@ -4,14 +4,25 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 
+import javax.swing.JFrame;
+
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.log4j.Logger;
 
 import com.bnrdo.databrowser.AppStat;
 import com.bnrdo.databrowser.ColumnInfoMap;
 import com.bnrdo.databrowser.Constants.JAVA_TYPE;
 import com.bnrdo.databrowser.format.ListSourceFormat;
+import com.bnrdo.databrowser.mvc.DataBrowserModel;
 
 public class ModelService<E> {
+	
+	private DataBrowserModel<E> model;
+	
+	public ModelService(DataBrowserModel<E> m){
+		model = m;
+	}
+	
 	public void populateDBTable(String tblName, Statement stmt, List<E> source, ListSourceFormat<E> fmt, MutableInt ctr) throws SQLException{
 		int countForLog = 0;
 		int countForINSERTED = 0;
@@ -40,7 +51,7 @@ public class ModelService<E> {
     		}
     		//source.remove(e);
     	}
-		System.out.println(countForLog + " rows succesfully inserted!");
+		//System.out.println(countForLog + " rows succesfully inserted!");
     }
 	public String translateColInfoMapToCreateTableSQL(String tblName, ColumnInfoMap colInfoMap){
     	StringBuilder retVal = new StringBuilder();
@@ -95,4 +106,5 @@ public class ModelService<E> {
 		
 		return retVal;
 	}
+	//REFACTOR MODEL, PUT ITS CODE TO MODELSERVICE
 }

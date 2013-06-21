@@ -262,5 +262,21 @@ public class Pagination {
 			return false;
 		return true;
 	}
-
+	@Override public String toString(){
+		StringBuilder bdr = new StringBuilder("Pagination Information -> [");
+		/*private int currentPageNum;
+		private int[] pageNumsRaw;
+		private int[] pageNumsExposed;
+		private int totalPageCount;
+		private int maxExposableCount;
+		private int itemsPerPage;*/
+		bdr.append("Current Page : ").append(currentPageNum).append(", ")
+			.append("All Page Numbers : ").append(Arrays.toString(pageNumsRaw).replace("[", "(").replace("]", ")")).append(", ")
+			.append("Exposed Page Numbers : ").append(Arrays.toString(pageNumsExposed).replace("[", "(").replace("]", ")")).append(", ")
+			.append("Total Page Count : ").append(totalPageCount).append(", ")
+			.append("Max Exposable Page Numbers : ").append(maxExposableCount).append(", ")
+			.append("Items Per Page : ").append(itemsPerPage)
+			.append("]");
+		return bdr.toString();
+	}
 }

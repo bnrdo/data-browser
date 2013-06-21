@@ -30,8 +30,9 @@ public class DataBrowserView {
     
     private JTextField txtSearch;
     private JComboBox cboSearch;
-    private JButton btnSearch;
     private JTable tblData;
+    private JButton btnSearch;
+    private JButton btnSettings;
 
     private PageButton [] pageBtns;
     private PageButton btnFirst;
@@ -189,20 +190,22 @@ public class DataBrowserView {
         JLabel lblSearch = new JLabel("Search Products");
 
         txtSearch = new JTextField() {
-            @Override
-            public Dimension getMaximumSize() {
+            @Override public Dimension getMaximumSize() {
                 return new Dimension(100, 20);
             }
         };
         cboSearch = new JComboBox() {
-            @Override
-            public Dimension getMaximumSize() {
+            @Override public Dimension getMaximumSize() {
                 return new Dimension(getPreferredSize().width, 20);
             }
         };
         btnSearch = new JButton(){
-        	@Override
-            public Dimension getMaximumSize() {
+        	@Override public Dimension getMaximumSize() {
+                return new Dimension(getPreferredSize().width, 20);
+            }
+        };
+        btnSettings = new JButton("Settings"){
+        	@Override public Dimension getMaximumSize() {
                 return new Dimension(getPreferredSize().width, 20);
             }
         };
@@ -215,6 +218,8 @@ public class DataBrowserView {
         retVal.add(cboSearch);
         retVal.add(Box.createRigidArea(new Dimension(5, 10)));
         retVal.add(btnSearch);
+        //retVal.add(Box.createRigidArea(new Dimension(5, 10)));
+        //retVal.add(btnSettings);
         
         return retVal;
     }
@@ -355,7 +360,7 @@ public class DataBrowserView {
     }
     
     @SuppressWarnings("serial")
-	class PageButton extends JButton {
+	public class PageButton extends JButton {
         private boolean selected;
 
         public PageButton() {

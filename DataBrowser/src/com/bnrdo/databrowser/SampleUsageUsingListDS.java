@@ -79,7 +79,7 @@ public class SampleUsageUsingListDS {
 		dbrowse.setColInfoMap(colInfoMap);
 		dbrowse.setTableDataSourceFormat(format);
 		dbrowse.setDataSource(source);
-		dbrowse.create();
+		dbrowse.katsu();
 		
 		/*dbrowse.getTestButton().addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -95,7 +95,7 @@ public class SampleUsageUsingListDS {
 		
 		Random r = new Random();
 		int num = 121;//r.nextInt(1000);
-		System.out.println("Generating " + num + " rows...");
+		//System.out.println("Generating " + num + " rows...");
 		List<Person> retVal = new ArrayList<Person>();
 		for (int i = 1; i <= num; i++) {
 			Person p = new Person();

@@ -36,7 +36,6 @@ public class TableSortListener<E> extends MouseAdapter implements Disablelable{
 		for(MouseMotionListener listen : header.getMouseMotionListeners()){
 			if(listen instanceof PushableTableHeaderListener){
 				isSortableAccdgToPushableListener = ((PushableTableHeaderListener)listen).isSortable();
-				System.out.println("isSortableAccdgToPushableListener : " + isSortableAccdgToPushableListener );
 				break;
 			}
 		}

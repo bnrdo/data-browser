@@ -11,6 +11,7 @@ import java.util.Formatter;
 import java.util.List;
 
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.log4j.Logger;
 
 import com.bnrdo.databrowser.Constants.SORT_ORDER;
 import com.bnrdo.databrowser.Constants.JAVA_TYPE;
@@ -18,8 +19,11 @@ import com.bnrdo.databrowser.comparator.DateComparator;
 import com.bnrdo.databrowser.comparator.IntegerComparator;
 import com.bnrdo.databrowser.comparator.StringComparator;
 import com.bnrdo.databrowser.format.ListSourceFormat;
+import com.bnrdo.databrowser.mvc.DataBrowserModel;
 
 public class DBroUtil {
+	
+	private static org.apache.log4j.Logger log = Logger.getLogger(DBroUtil.class);
 	
 	public static Connection getConnection(){
 		Connection con = null;
@@ -28,19 +32,22 @@ public class DBroUtil {
 			con = DriverManager.getConnection("jdbc:hsqldb:mem:data-browser", "sa", "");
 			//con = DriverManager.getConnection("jdbc:hsqldb:file:C:\\Users\\ut1p98\\Desktop\\db\\data-browser", "sa", "");
 			//con = DriverManager.getConnection("jdbc:hsqldb:file:C:\\Users\\ut1p98\\Desktop\\db\\data-browser", "sa", "");
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		}  catch(SQLException e){
-			e.printStackTrace();
+		} catch (Exception e) {
+			log.error("An error occured while getting embedded database connection", e);
 		}
+		
 		return con;
 	}
 	public static <E> Object[] convertPojoToObjectArray(E domain, List<String> propNamesToPut){
 		Object[] retVal = new Object[propNamesToPut.size()];
-		System.out.println(propNamesToPut);
+		//System.out.println(propNamesToPut);
 		return retVal;
 	}
-	
+	/*public static String convertArrayToString(String[] array){
+		for(String s : array){
+			
+		}
+	}*/
 	public static int getIndexOfNumFromArray(int[] numArr, int toFind){
 		int retVal = 0;
 		
@@ -128,5 +135,30 @@ public class DBroUtil {
 		return formatter.format(money);
 	}
 	
-    
+	public static void logPropertyChange(Logger log, Object oldVal, Object newVal, String propertyName){
+		if(oldVal == null && newVal != null){
+			log.debug("New " + propertyName + " value set [old = null, new = " + newVal.toString() + "]. Notifying the model listeners...");
+			return;
+		}else if(oldVal != null && newVal == null){
+			log.debug("New " + propertyName + " value set [old = " + oldVal.toString() + ", new = null]. Notifying the model listeners...");
+			return;
+		}else if(oldVal == null && newVal == null){
+			log.debug("Same value of old " + propertyName + " set [old = null, new = null]. Model listeners will not be notified");
+			return;
+		}else if(oldVal != null && newVal != null){
+			if(newVal.equals(oldVal)){
+				log.debug("Same value of old " + propertyName + " set [old = " + oldVal.toString() + ", new = " + newVal.toString() + "]. Model listeners will not be notified");
+			}else{
+				log.debug("New " + propertyName + " value set [old = " + oldVal.toString() + ", new = " + newVal.toString() + "]. Notifying the model listeners...");
+			}
+		}
+	}
+	
+	public static void logPropertyChange(Logger log, int oldVal, int newVal, String propertyName){
+		logPropertyChange(log, Integer.toString(oldVal), Integer.toString(newVal), propertyName);
+	}
+	
+	public static void logPropertyChange(Logger log, boolean oldVal, boolean newVal, String propertyName){
+		logPropertyChange(log, Boolean.toString(oldVal), Boolean.toString(newVal), propertyName);
+	}
 }

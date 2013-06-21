@@ -32,18 +32,18 @@ public class ColumnInfoMap {
 			list.set(2, typeStr);
 		}
 	}
-	public void putInfo(int index, String colName, String propName){
+	public void putInfo(int index, String columnNameAsInTable, String propertyNameAsInPOJO){
 		List<String> list = map.get(index);
 		
 		if(list == null){
 			List<String> newList =new ArrayList<String>();
-			newList.add(colName);
-			newList.add(propName);
+			newList.add(columnNameAsInTable);
+			newList.add(propertyNameAsInPOJO);
 			newList.add("");
 			map.put(index, newList);
 		}else{
-			list.set(0, colName);
-			list.set(1, propName);
+			list.set(0, columnNameAsInTable);
+			list.set(1, propertyNameAsInPOJO);
 			list.set(2, "");
 		}
 	}
@@ -128,5 +128,19 @@ public class ColumnInfoMap {
 			return true;
 		
 		return false;
+	}
+	
+	@Override public String toString(){
+		StringBuilder bdr = new StringBuilder("Column Information -> [");
+		
+		for(Integer i : map.keySet()){
+			List<String> cont = map.get(i);
+			bdr.append("Col # : ").append(i.toString()).append(", ")
+				.append("Col Name : ").append(cont.get(0)).append(", ")
+				.append("Prop To Display : ").append(cont.get(1))
+				.append("]");
+		}
+		
+		return bdr.toString();
 	}
 }

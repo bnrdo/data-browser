@@ -1,7 +1,6 @@
 package com.bnrdo.databrowser;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -126,6 +125,6 @@ public class Query{
 			.limit(10)
 			.offset(0));
 		
-		System.out.println(qry);
+		//System.out.println(qry);
 	}
 }

@@ -3,22 +3,21 @@ package com.bnrdo.databrowser;
 import java.awt.BorderLayout;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.SQLException;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
-import org.jooq.Field;
+import org.apache.log4j.Logger;
 import org.jooq.SQLDialect;
-import org.jooq.Select;
-import org.jooq.SelectJoinStep;
-import org.jooq.impl.Factory;
 
 import com.bnrdo.databrowser.DataBrowser;
 import com.bnrdo.databrowser.domain.Logs;
 
 public class SampleUsageUsingConnectionDS {
+	
+	private static org.apache.log4j.Logger log = Logger.getLogger(SampleUsageUsingConnectionDS.class);
+	
 	public static void main(String[] args) {
 		SwingUtilities.invokeLater(new Runnable(){
 			public void run() {
@@ -26,7 +25,7 @@ public class SampleUsageUsingConnectionDS {
 					//UIManager.setLookAndFeel("com.jgoodies.looks.plastic.PlasticXPLookAndFeel");
 					UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
 				} catch (Exception e){
-					e.printStackTrace();
+					log.error("An error occured while setting the application's Look and Feel", e);
 				}
 				
 				SampleUsageUsingConnectionDS creator = new SampleUsageUsingConnectionDS();
@@ -86,10 +85,8 @@ public class SampleUsageUsingConnectionDS {
 				try {
 					Class.forName("oracle.jdbc.driver.OracleDriver");
 					retVal = DriverManager.getConnection("jdbc:oracle:thin:@LXISAP0230.ISAP.ASIA.CIB:1521:FCLDEV1", "UT05MR", "UT05MR");
-				} catch (SQLException e) {
-					e.printStackTrace();
-				} catch (ClassNotFoundException e) {
-					e.printStackTrace();
+				} catch (Exception e) {
+					log.error("An error occured while getting database connection", e);
 				}
 				
 				return retVal;
@@ -97,17 +94,13 @@ public class SampleUsageUsingConnectionDS {
 			@Override public SQLDialect getSQLDialect() {
 				return SQLDialect.ORACLE;
 			}
-			private Field<Object> fn(String tblName, String colName){
-				return Factory.fieldByName(tblName, colName);
-			}
-			
 		});
 		
 		
 		dbrowse.setColInfoMap(colInfoMap);
-		dbrowse.setMaxPageCountExposable(7);
-		dbrowse.setRowCountPerPage(23);
-		dbrowse.create();
+		dbrowse.setMaxPageCountExposable(2);
+		dbrowse.setRowCountPerPage(10);
+		dbrowse.katsu();
 		
 		return dbrowse;
 	}

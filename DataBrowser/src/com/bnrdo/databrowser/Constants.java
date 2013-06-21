@@ -17,7 +17,7 @@ public class Constants{
 		public static final String FN_SORT_ORDER = "sortOrder";
 		public static final String FN_DS_TYPE = "dsType";
 		public static final String FN_FILTER = "filterKey";
-		public static final String FN_IS_TABLE_LOADING = "isTableLoading";
+		public static final String FN_IS_DATA_FOR_TABLE_LOADING = "isDataForTableLoading";
 		public static final String FN_IS_DS_LOADING = "isDataSourceLoading";
 		public static final String FN_IS_STATUS_SHOWABLE = "isStatusShowable";
 		public static final String FN_IS_SORT_DETAILS_SHOWABLE = "isSortDetailsShowable";

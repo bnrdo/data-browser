@@ -14,12 +14,8 @@ import javax.swing.event.SwingPropertyChangeSupport;
 import javax.swing.table.DefaultTableModel;
 
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.jooq.Condition;
-import org.jooq.Configuration;
-import org.jooq.QueryPart;
+import org.apache.log4j.Logger;
 import org.jooq.SQLDialect;
-import org.jooq.Select;
-import org.jooq.Support;
 import org.jooq.impl.Factory;
 
 import com.bnrdo.databrowser.ColumnInfoMap;
@@ -35,6 +31,8 @@ import com.bnrdo.databrowser.format.ListSourceFormat;
 import com.bnrdo.databrowser.mvc.services.ModelService;
 
 public class DataBrowserModel<E> {
+	
+	private static org.apache.log4j.Logger log = Logger.getLogger(DataBrowserModel.class);
 
 	private Pagination pagination;
 	private ListSourceFormat<E> tableDataSourceFormat;
@@ -83,15 +81,17 @@ public class DataBrowserModel<E> {
 		isDataForTableLoading = false;
 		isDataSourceLoading = false;
 		propChangeFirer = new SwingPropertyChangeSupport(this);
-		service = new ModelService<E>();
+		service = new ModelService<E>(this);
 		
 		tableName = "data_browser_persist";
 	}
 
 	public void setPagination(Pagination p) {
-		boolean isEqual = p.equals(pagination);
 		Pagination oldVal = pagination;
 		pagination = p;
+		
+		DBroUtil.logPropertyChange(log, oldVal, p, Constants.ModelFields.FN_PAGINATION);
+		
 		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_PAGINATION, oldVal, p);
 	}
 	
@@ -104,12 +104,8 @@ public class DataBrowserModel<E> {
 		for(String col : colInfoMap.getPropertyNames()){
 			colsBdr.append(col).append(", ");
 		}
+		
 		colsBdr.replace(colsBdr.length()-2, colsBdr.length(), "");
-		
-		//for oracle
-		//SelectJoinStep selectQry = dSource.getSelectQuery();
-		//selectQry.get
-		
 		Query qry = dSource.getSelectQuery();
 		qry.addOrderBy("col_name", SORT_ORDER.ASC);
 		qry.addCondition(Factory.condition("upper(filter_col) LIKE upper('filter_key%')"));
@@ -121,9 +117,8 @@ public class DataBrowserModel<E> {
 							.replace("775487541", "offset_count")
 							.replace("554754478", "limit_count");
 		
-		List<String> froms = qry.getFrom();
 		StringBuilder countQry = new StringBuilder("SELECT COUNT(*) FROM ");
-		Iterator<String> iter = froms.iterator();
+		Iterator<String> iter = qry.getFrom().iterator();
 		
 		while(iter.hasNext()){
 			countQry.append(iter.next());
@@ -184,13 +179,13 @@ public class DataBrowserModel<E> {
 	    			service.populateDBTable(tableName,stmt, list, ((ListSourceFormat<E>)tableDataSourceFormat), INSERTED);
 	    			
 	    		} catch (Exception e) {
-	    			e.printStackTrace();
+	    			log.error("An error occured while persisting list data source", e);
 	    		} finally {
 	    			try {
 	    				stmt.close();
 	    				conn.close();
 	    			} catch (Exception e) {
-	    				e.printStackTrace();
+	    				log.error("An error occured while cleaning up connection resources", e);
 	    			}
 	    		}
 				return null;
@@ -198,8 +193,8 @@ public class DataBrowserModel<E> {
 	        
 	        @Override
 	        protected void done() {
-	        	System.out.println("its done bitchachos");
-	        	System.out.println("Passed data source set to null, cannot use its cached size anymore. Will use select count for getting the dssize.");
+//	        	System.out.println("its done bitchachos");
+//	        	System.out.println("Passed data source set to null, cannot use its cached size anymore. Will use select count for getting the dssize.");
 	        	listDataSource = null;
 	        	setDataSourceLoading(false);
 	        }
@@ -211,11 +206,11 @@ public class DataBrowserModel<E> {
 		derivePagination(getDataSourceRowCount());
 	}
 	
-	public int queryRowCount() throws ModelException{
+	public int queryRowCount(){
 		int retVal = 0;
 		
 		if(dialect.equals(SQLDialect.HSQLDB) && listDataSource != null){
-			System.out.println("Base datasource not fully processed. Using its cached size.");
+			//System.out.println("Base datasource not fully processed. Using its cached size.");
 			retVal = listDataSource.size();
 		}else{
 			String qryCount = QRY_RECORD_COUNT;
@@ -229,19 +224,18 @@ public class DataBrowserModel<E> {
 			try {
 				con = (dbDataSource == null) ? DBroUtil.getConnection() : dbDataSource.getConnection();
 				stmt = con.createStatement(); 
-				System.out.println("Count query is : " + qryCount);
+				//System.out.println("Count query is : " + qryCount);
 				rs = stmt.executeQuery(qryCount);
 				
 				while(rs.next()){
 					retVal = (int) rs.getLong(1);
-					System.out.println("Data source count is : " + dataSourceRowCount);
+					//System.out.println("Data source count is : " + dataSourceRowCount);
 				}
 			} catch (Exception e) {
-				e.printStackTrace();
-				throw new ModelException(e.toString());
+				log.error("An error occured while cleaning up the db connection", e);
 			}
 			
-			System.out.println("query count is : " + qryCount);
+			//System.out.println("query count is : " + qryCount);
 		}
 		return retVal;
 	}
@@ -252,6 +246,8 @@ public class DataBrowserModel<E> {
 		
 		setDataSourceRowCount(queryRowCount());
 		derivePagination(getDataSourceRowCount());
+		
+		DBroUtil.logPropertyChange(log, oldVal, filtr, Constants.ModelFields.FN_FILTER);
 		
 		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_FILTER, oldVal, filtr);
 	}
@@ -282,7 +278,7 @@ public class DataBrowserModel<E> {
 	        		
 	        		String qry = QRY_TEMPLATE;
 	        		
-	        		System.out.println("query before setting params  : " + qry);
+	        		//System.out.println("query before setting params  : " + qry);
 	        		
 	        		/* start fetching the scrolled list */
         			qry = qry.replace("col_name", sortCol);
@@ -293,16 +289,16 @@ public class DataBrowserModel<E> {
 	        				.replace("filter_col", filter.getCol())
 	        				.replace("filter_key", filter.getKey());
 	        		
-	        		System.out.println("query after setting params  : " + qry);
+	        		//System.out.println("query after setting params  : " + qry);
 	        		
 	        		setDataForTableLoading(true);
 	        		
 	        		if(dialect.equals(SQLDialect.HSQLDB)){
 		        		if(INSERTED.intValue() < to){
-		        			System.out.println("INSERTED record size is not enough for the requested ResultSet [from : " + from + " | to : " + to +"]");
+		        			//System.out.println("INSERTED record size is not enough for the requested ResultSet [from : " + from + " | to : " + to +"]");
 		        			
 		        			while(INSERTED.intValue() < to){
-		        				System.out.println("Waiting for the model to insert the requested records.");
+		        				//System.out.println("Waiting for the model to insert the requested records.");
 		        				Thread.currentThread().sleep(500);
 		        			}
 		        		}
@@ -322,15 +318,14 @@ public class DataBrowserModel<E> {
 	        			publish(cont);
 	        		}
 	        	} catch (Exception e) {
-	        		e.printStackTrace();
-	        		throw new ModelException(e.toString());
+	        		log.error("An error occured while the data browser is populated", e);
 	        	} finally {
 	        		try {
 	        			rs.close();
 	        			statement.close();
 	        			conn.close();
 	        		} catch (Exception e) {
-	        			//throw new ModelException(e.toString());
+	        			log.error("An error occured while cleaning up connection resources", e);
 	        		}
 	        	}
 				return null;
@@ -347,7 +342,7 @@ public class DataBrowserModel<E> {
 	        		tblShouldClear = false;
 	        	}
 	        	for(List<String> list : chunks){
-	        		System.out.println("published " + list + " to the table");
+	        		//System.out.println("published " + list + " to the table");
 	        		pagedTableModel.addRow(list.toArray());
 	        	}
 	        }
@@ -368,24 +363,36 @@ public class DataBrowserModel<E> {
 	public void setDataForTableLoading(boolean bool) {
 		boolean oldVal = isDataForTableLoading;
 		isDataForTableLoading = bool;
-		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_IS_TABLE_LOADING, oldVal, bool);
+		
+		DBroUtil.logPropertyChange(log, oldVal, bool, Constants.ModelFields.FN_IS_DATA_FOR_TABLE_LOADING);
+		
+		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_IS_DATA_FOR_TABLE_LOADING, oldVal, bool);
 	}
 	
 	public void setDataSourceLoading(boolean bool) {
 		boolean oldVal = isDataSourceLoading;
 		isDataSourceLoading = bool;
+		
+		DBroUtil.logPropertyChange(log, oldVal, bool, Constants.ModelFields.FN_IS_DS_LOADING);
+		
 		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_IS_DS_LOADING, oldVal, bool);
 	}
 
 	public void setColInfoMap(ColumnInfoMap map) {
 		ColumnInfoMap oldVal = colInfoMap;
 		colInfoMap = map;
+		
+		DBroUtil.logPropertyChange(log, oldVal, map, Constants.ModelFields.FN_COL_INFO_MAP);
+		
 		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_COL_INFO_MAP, oldVal, map);
 	}
 	
 	public void setDataSourceRowCount(int count){
 		int oldVal = dataSourceRowCount;
 		dataSourceRowCount = count;
+		
+		DBroUtil.logPropertyChange(log, oldVal, count, Constants.ModelFields.FN_DATA_TABLE_SOURCE_ROW_COUNT);
+		
 		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_DATA_TABLE_SOURCE_ROW_COUNT, oldVal, count);
 	}
 
@@ -395,8 +402,10 @@ public class DataBrowserModel<E> {
 		} else {
 			ListSourceFormat<E> oldVal = tableDataSourceFormat;
 			tableDataSourceFormat = fmt;
-			propChangeFirer.firePropertyChange(Constants.ModelFields.FN_DATA_TABLE_SOURCE_FORMAT,
-					oldVal, fmt);
+			
+			DBroUtil.logPropertyChange(log, oldVal, fmt, Constants.ModelFields.FN_DATA_TABLE_SOURCE_FORMAT);
+			
+			propChangeFirer.firePropertyChange(Constants.ModelFields.FN_DATA_TABLE_SOURCE_FORMAT, oldVal, fmt);
 		}
 	}
 	
@@ -404,10 +413,13 @@ public class DataBrowserModel<E> {
 		return pagedTableModel;
 	}
 	
-	public void setPagedTableModel(DefaultTableModel model){
+	public void setPagedTableModel(DefaultTableModel mod){
 		DefaultTableModel oldVal = pagedTableModel;
-		pagedTableModel = model;
-		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_PAGED_TABLE_MODEL, oldVal, model);
+		pagedTableModel = mod;
+		
+		DBroUtil.logPropertyChange(log, oldVal, mod, Constants.ModelFields.FN_PAGED_TABLE_MODEL);
+		
+		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_PAGED_TABLE_MODEL, oldVal, mod);
 	}
 
 	public void setMaxExposableCount(int num) {
@@ -416,6 +428,14 @@ public class DataBrowserModel<E> {
 
 	public void setItemsPerPage(int num) {
 		itemsPerPage = num;
+	}
+
+	public SQLDialect getDialect() {
+		return dialect;
+	}
+
+	public void setDialect(SQLDialect dialect) {
+		this.dialect = dialect;
 	}
 
 	public ColumnInfoMap getColInfoMap() {
@@ -483,6 +503,8 @@ public class DataBrowserModel<E> {
 		sortOrder = order;
 		sortCol = colToSort;
 		sortColAsInUI = colAsInTable;
+		
+		DBroUtil.logPropertyChange(log, oldVal, order, Constants.ModelFields.FN_SORT_ORDER);
 		
 		//firing just the sortorder is already enough because it always changes whenever
 		//setsort is called
