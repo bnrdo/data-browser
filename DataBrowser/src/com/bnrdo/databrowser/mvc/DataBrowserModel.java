@@ -19,12 +19,12 @@ import org.jooq.SQLDialect;
 import org.jooq.impl.Factory;
 
 import com.bnrdo.databrowser.ColumnInfoMap;
-import com.bnrdo.databrowser.Constants.SORT_ORDER;
+import com.bnrdo.databrowser.Constants.ModelField;
+import com.bnrdo.databrowser.Constants.SortOrder;
 import com.bnrdo.databrowser.Constants;
 import com.bnrdo.databrowser.DBroUtil;
 import com.bnrdo.databrowser.DBDataSource;
 import com.bnrdo.databrowser.Filter;
-import com.bnrdo.databrowser.Pagination;
 import com.bnrdo.databrowser.Query;
 import com.bnrdo.databrowser.exception.ModelException;
 import com.bnrdo.databrowser.format.ListSourceFormat;
@@ -34,7 +34,6 @@ public class DataBrowserModel<E> {
 	
 	private static org.apache.log4j.Logger log = Logger.getLogger(DataBrowserModel.class);
 
-	private Pagination pagination;
 	private ListSourceFormat<E> tableDataSourceFormat;
 	private DefaultTableModel pagedTableModel;
 
@@ -43,7 +42,7 @@ public class DataBrowserModel<E> {
 	private ColumnInfoMap colInfoMap;
 	private DBDataSource dbDataSource;
 	
-	private SORT_ORDER sortOrder;
+	private SortOrder sortOrder;
 	private SQLDialect dialect;
 	
 	private String sortCol;
@@ -60,6 +59,7 @@ public class DataBrowserModel<E> {
 	private int recordOffset;
 	private int maxExposableCount;
 	private int itemsPerPage;
+	private int totalPageCount;
 	
 	//for List data source, this tracks the number of records currently inserted to the embedded DB
 	private MutableInt INSERTED;
@@ -85,15 +85,6 @@ public class DataBrowserModel<E> {
 		
 		tableName = "data_browser_persist";
 	}
-
-	public void setPagination(Pagination p) {
-		Pagination oldVal = pagination;
-		pagination = p;
-		
-		DBroUtil.logPropertyChange(log, oldVal, p, Constants.ModelFields.FN_PAGINATION);
-		
-		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_PAGINATION, oldVal, p);
-	}
 	
 	/* setDataSource and its overloaded methods are like entry points.
 	 * set the default values after configuring the data source
@@ -107,13 +98,13 @@ public class DataBrowserModel<E> {
 		
 		colsBdr.replace(colsBdr.length()-2, colsBdr.length(), "");
 		Query qry = dSource.getSelectQuery();
-		qry.addOrderBy("col_name", SORT_ORDER.ASC);
+		qry.addOrderBy("col_name", SortOrder.ASC);
 		qry.addCondition(Factory.condition("upper(filter_col) LIKE upper('filter_key%')"));
 		qry.setOffset(775487541);
 		qry.setLimit(554754478);
 		
 		QRY_TEMPLATE = qry.buildSQL()
-							.replace(" ASC",  " sort_order")
+							.replace(" asc",  " SortOrder")
 							.replace("775487541", "offset_count")
 							.replace("554754478", "limit_count");
 		
@@ -157,7 +148,7 @@ public class DataBrowserModel<E> {
 		
 		QRY_TEMPLATE = "SELECT * FROM " + tableName
 						+ " WHERE filter_col like 'filter_key%'"
-						+ " ORDER BY col_name sort_order"
+						+ " ORDER BY col_name SortOrder"
 						+ " LIMIT limit_count " + "OFFSET offset_count";
 		QRY_RECORD_COUNT = "SELECT COUNT(*) FROM " + tableName + " WHERE filter_col like 'filter_key%'";
 		
@@ -247,9 +238,9 @@ public class DataBrowserModel<E> {
 		setDataSourceRowCount(queryRowCount());
 		derivePagination(getDataSourceRowCount());
 		
-		DBroUtil.logPropertyChange(log, oldVal, filtr, Constants.ModelFields.FN_FILTER);
+		DBroUtil.logPropertyChange(log, oldVal, filtr, ModelField.filterKey);
 		
-		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_FILTER, oldVal, filtr);
+		propChangeFirer.firePropertyChange(ModelField.filterKey.name(), oldVal, filtr);
 	}
 	/* Returns list of cropped data. Data is cropped by calculating the right
 	 * sql LIMIT and OFFSET to be applied in the query. For ORACLE, LIMIT and OFFSET are done
@@ -283,13 +274,13 @@ public class DataBrowserModel<E> {
 	        		/* start fetching the scrolled list */
         			qry = qry.replace("col_name", sortCol);
 	        		
-	        		qry = qry.replace("sort_order", sortOrder.toString())
+	        		qry = qry.replace("SortOrder", sortOrder.toString())
 	        				.replace("limit_count", Integer.toString((recordLimit)))
 	        				.replace("offset_count", Integer.toString(recordOffset))
 	        				.replace("filter_col", filter.getCol())
 	        				.replace("filter_key", filter.getKey());
-	        		
-	        		//System.out.println("query after setting params  : " + qry);
+
+	        		log.info("Query for Paged Table  : " + qry);
 	        		
 	        		setDataForTableLoading(true);
 	        		
@@ -364,36 +355,36 @@ public class DataBrowserModel<E> {
 		boolean oldVal = isDataForTableLoading;
 		isDataForTableLoading = bool;
 		
-		DBroUtil.logPropertyChange(log, oldVal, bool, Constants.ModelFields.FN_IS_DATA_FOR_TABLE_LOADING);
+		DBroUtil.logPropertyChange(log, oldVal, bool, ModelField.isDataForTableLoading);
 		
-		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_IS_DATA_FOR_TABLE_LOADING, oldVal, bool);
+		propChangeFirer.firePropertyChange(ModelField.isDataForTableLoading.name(), oldVal, bool);
 	}
 	
 	public void setDataSourceLoading(boolean bool) {
 		boolean oldVal = isDataSourceLoading;
 		isDataSourceLoading = bool;
 		
-		DBroUtil.logPropertyChange(log, oldVal, bool, Constants.ModelFields.FN_IS_DS_LOADING);
+		DBroUtil.logPropertyChange(log, oldVal, bool, ModelField.isDataSourceLoading);
 		
-		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_IS_DS_LOADING, oldVal, bool);
+		propChangeFirer.firePropertyChange(ModelField.isDataSourceLoading.name(), oldVal, bool);
 	}
 
 	public void setColInfoMap(ColumnInfoMap map) {
 		ColumnInfoMap oldVal = colInfoMap;
 		colInfoMap = map;
 		
-		DBroUtil.logPropertyChange(log, oldVal, map, Constants.ModelFields.FN_COL_INFO_MAP);
+		DBroUtil.logPropertyChange(log, oldVal, map, ModelField.colInfoMap);
 		
-		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_COL_INFO_MAP, oldVal, map);
+		propChangeFirer.firePropertyChange(ModelField.colInfoMap.name(), oldVal, map);
 	}
 	
 	public void setDataSourceRowCount(int count){
 		int oldVal = dataSourceRowCount;
 		dataSourceRowCount = count;
 		
-		DBroUtil.logPropertyChange(log, oldVal, count, Constants.ModelFields.FN_DATA_TABLE_SOURCE_ROW_COUNT);
+		DBroUtil.logPropertyChange(log, oldVal, count, ModelField.dataSourceRowCount);
 		
-		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_DATA_TABLE_SOURCE_ROW_COUNT, oldVal, count);
+		propChangeFirer.firePropertyChange(ModelField.dataSourceRowCount.name(), oldVal, count);
 	}
 
 	public void setTableDataSourceFormat(ListSourceFormat<E> fmt) {
@@ -403,9 +394,9 @@ public class DataBrowserModel<E> {
 			ListSourceFormat<E> oldVal = tableDataSourceFormat;
 			tableDataSourceFormat = fmt;
 			
-			DBroUtil.logPropertyChange(log, oldVal, fmt, Constants.ModelFields.FN_DATA_TABLE_SOURCE_FORMAT);
+			DBroUtil.logPropertyChange(log, oldVal, fmt, ModelField.tableDataSourceFormat);
 			
-			propChangeFirer.firePropertyChange(Constants.ModelFields.FN_DATA_TABLE_SOURCE_FORMAT, oldVal, fmt);
+			propChangeFirer.firePropertyChange(ModelField.tableDataSourceFormat.name(), oldVal, fmt);
 		}
 	}
 	
@@ -417,13 +408,27 @@ public class DataBrowserModel<E> {
 		DefaultTableModel oldVal = pagedTableModel;
 		pagedTableModel = mod;
 		
-		DBroUtil.logPropertyChange(log, oldVal, mod, Constants.ModelFields.FN_PAGED_TABLE_MODEL);
+		DBroUtil.logPropertyChange(log, oldVal, mod, ModelField.pagedTableModel);
 		
-		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_PAGED_TABLE_MODEL, oldVal, mod);
+		propChangeFirer.firePropertyChange(ModelField.pagedTableModel.name(), oldVal, mod);
 	}
 
 	public void setMaxExposableCount(int num) {
+		Integer oldVal = maxExposableCount;
 		maxExposableCount = num;
+		
+		DBroUtil.logPropertyChange(log, oldVal.intValue(), num, ModelField.maxExposableCount);
+		
+		propChangeFirer.firePropertyChange(ModelField.maxExposableCount.name(), oldVal, Integer.valueOf(num));
+	}
+	
+	public void setTotalPageCount(int num) {
+		Integer oldVal = totalPageCount;
+		totalPageCount = num;
+		
+		DBroUtil.logPropertyChange(log, oldVal.intValue(), num, ModelField.totalPageCount);
+		
+		propChangeFirer.firePropertyChange(ModelField.totalPageCount.name(), oldVal, Integer.valueOf(num));
 	}
 
 	public void setItemsPerPage(int num) {
@@ -446,16 +451,16 @@ public class DataBrowserModel<E> {
 		return tableDataSourceFormat;
 	}
 
-	public Pagination getPagination() {
-		return pagination;
-	}
-
-	public SORT_ORDER getSortOrder() {
+	public SortOrder getSortOrder() {
 		return sortOrder;
 	}
 	
 	public Filter getFilter(){
 		return filter;
+	}
+	
+	public int getItemsPerPage(){
+		return itemsPerPage;
 	}
 	
 	public String getSortColAsInUI(){
@@ -498,17 +503,19 @@ public class DataBrowserModel<E> {
 		isRowCountDetailsShowable = isShowable;
 	}
 
-	public void setSort(String colAsInTable, String colToSort, SORT_ORDER order) {
-		SORT_ORDER oldVal = sortOrder;
+	public void setSort(String colAsInTable, String colToSort, SortOrder order) {
+		log.info("A call to setSort. Order : " + order);
+		
+		SortOrder oldVal = sortOrder;
 		sortOrder = order;
 		sortCol = colToSort;
 		sortColAsInUI = colAsInTable;
 		
-		DBroUtil.logPropertyChange(log, oldVal, order, Constants.ModelFields.FN_SORT_ORDER);
+		DBroUtil.logPropertyChange(log, oldVal, order, ModelField.sortOrder);
 		
 		//firing just the sortorder is already enough because it always changes whenever
 		//setsort is called
-		propChangeFirer.firePropertyChange(Constants.ModelFields.FN_SORT_ORDER, oldVal, order);
+		propChangeFirer.firePropertyChange(ModelField.sortOrder.name(), oldVal, order);
 	}
 
 	public void addModelListener(PropertyChangeListener prop) {
@@ -518,16 +525,9 @@ public class DataBrowserModel<E> {
 	/* This method is for adjusting the pagination when the query changes.
 	 */
 	private void derivePagination(int srcSize){
-		Pagination p = new Pagination();
-		p.setCurrentPageNum(Pagination.FIRST_PAGE);
-		p.setMaxExposableCount(maxExposableCount);
-		p.setItemsPerPage(itemsPerPage);
-			
-		int itemsPerPage = p.getItemsPerPage();
 		int pageCountForEvenSize = (srcSize / itemsPerPage);
 		int totalPageCount = (srcSize % itemsPerPage) == 0 ? pageCountForEvenSize : pageCountForEvenSize + 1; 
-		p.setTotalPageCount(totalPageCount);
-
-		setPagination(p);
+		setTotalPageCount(totalPageCount);
+		
 	}
 }

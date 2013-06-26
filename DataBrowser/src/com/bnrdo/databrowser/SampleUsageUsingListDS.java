@@ -15,7 +15,7 @@ import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
-import com.bnrdo.databrowser.Constants.JAVA_TYPE;
+import com.bnrdo.databrowser.Constants.JavaType;
 import com.bnrdo.databrowser.DataBrowser;
 import com.bnrdo.databrowser.domain.Person;
 import com.bnrdo.databrowser.format.ListSourceFormat;
@@ -48,11 +48,11 @@ public class SampleUsageUsingListDS {
 		final List<Person> source =  generateRandomSource();
 		final ColumnInfoMap colInfoMap = new ColumnInfoMap();
 		
-		colInfoMap.putInfo(0, "First Name", "firstName", 	JAVA_TYPE.STRING);
-		colInfoMap.putInfo(1, "Last Name", 	"lastName", 	JAVA_TYPE.STRING);
-		colInfoMap.putInfo(2, "Birthday", 	"birthDay", 	JAVA_TYPE.DATETIME);
-		colInfoMap.putInfo(3, "Age", 		"age", 			JAVA_TYPE.INTEGER);
-		colInfoMap.putInfo(4, "Occupation", "occupation", 	JAVA_TYPE.STRING);
+		colInfoMap.putInfo(0, "First Name", "firstName", 	JavaType.STRING);
+		colInfoMap.putInfo(1, "Last Name", 	"lastName", 	JavaType.STRING);
+		colInfoMap.putInfo(2, "Birthday", 	"birthDay", 	JavaType.DATETIME);
+		colInfoMap.putInfo(3, "Age", 		"age", 			JavaType.INTEGER);
+		colInfoMap.putInfo(4, "Occupation", "occupation", 	JavaType.STRING);
 		
 		ListSourceFormat<Person> format = new ListSourceFormat<Person>() {
 			@Override public int getColumnCount() {
@@ -79,7 +79,7 @@ public class SampleUsageUsingListDS {
 		dbrowse.setColInfoMap(colInfoMap);
 		dbrowse.setTableDataSourceFormat(format);
 		dbrowse.setDataSource(source);
-		dbrowse.katsu();
+		dbrowse.create();
 		
 		/*dbrowse.getTestButton().addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {

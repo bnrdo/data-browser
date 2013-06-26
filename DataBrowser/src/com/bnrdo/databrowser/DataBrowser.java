@@ -7,7 +7,7 @@ import javax.swing.JPanel;
 
 import org.apache.log4j.Logger;
 
-import com.bnrdo.databrowser.Constants.SORT_ORDER;
+import com.bnrdo.databrowser.Constants.SortOrder;
 import com.bnrdo.databrowser.exception.ModelException;
 import com.bnrdo.databrowser.format.ListSourceFormat;
 import com.bnrdo.databrowser.mvc.DataBrowserController;
@@ -40,10 +40,6 @@ public class DataBrowser<E> extends JPanel {
 	private boolean isPaginationEnabled;
     
     public DataBrowser() {
-        view = new DataBrowserView();
-        model = new DataBrowserModel<E>();
-        controller = new DataBrowserController<E>(view, model);
-        
         maxPageCountExposable = 7;
         rowCountPerPage = 10;
         
@@ -52,9 +48,6 @@ public class DataBrowser<E> extends JPanel {
     	isFilterDetailsShowable = true;
     	isRowCountDetailsShowable = true;
     	isPaginationEnabled = true;
-        
-        setLayout(new BorderLayout());
-        add(view.getUI(), BorderLayout.CENTER);
     }
 
     public void setStatusVisible(boolean bool){
@@ -103,8 +96,15 @@ public class DataBrowser<E> extends JPanel {
 		isPaginationEnabled = bool;
 	}
 
-	public void katsu(){
+	public void create(){
     	validateInput();
+    	
+    	view = new DataBrowserView();
+    	model = new DataBrowserModel<E>();
+    	controller = new DataBrowserController<E>(view, model);
+        
+        setLayout(new BorderLayout());
+        add(view.getUI(), BorderLayout.CENTER);
     	
     	log.debug("Initial setting - is status showable ? : " + isStatusShowable);
     	log.debug("Initial setting - is sort details showable ? : " + isSortDetailsShowable);
@@ -130,7 +130,9 @@ public class DataBrowser<E> extends JPanel {
     	
     	model.setSort(colInfoMap.getColumnName(0), 
     					colInfoMap.getPropertyName(0), 
-    					SORT_ORDER.ASC);
+    					SortOrder.ASC);
+    	
+    	controller.afterMVCInit();
     }
     
     private void validateInput(){

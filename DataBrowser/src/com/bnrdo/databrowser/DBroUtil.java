@@ -13,8 +13,9 @@ import java.util.List;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.log4j.Logger;
 
-import com.bnrdo.databrowser.Constants.SORT_ORDER;
-import com.bnrdo.databrowser.Constants.JAVA_TYPE;
+import com.bnrdo.databrowser.Constants.ModelField;
+import com.bnrdo.databrowser.Constants.SortOrder;
+import com.bnrdo.databrowser.Constants.JavaType;
 import com.bnrdo.databrowser.comparator.DateComparator;
 import com.bnrdo.databrowser.comparator.IntegerComparator;
 import com.bnrdo.databrowser.comparator.StringComparator;
@@ -130,12 +131,16 @@ public class DBroUtil {
 		return moneyFormat(Double.parseDouble(money));
 	}
 	
+	public static String moneyFormat(int money){
+		return moneyFormat(Integer.toString(money));
+	}
+	
 	public static String moneyFormat(double money){
 		DecimalFormat formatter = new DecimalFormat("#,###");
 		return formatter.format(money);
 	}
 	
-	public static void logPropertyChange(Logger log, Object oldVal, Object newVal, String propertyName){
+	public static void logPropertyChange(Logger log, Object oldVal, Object newVal, ModelField propertyName){
 		if(oldVal == null && newVal != null){
 			log.debug("New " + propertyName + " value set [old = null, new = " + newVal.toString() + "]. Notifying the model listeners...");
 			return;
@@ -153,12 +158,25 @@ public class DBroUtil {
 			}
 		}
 	}
+	public static Object[] injectElementInArrayAt(Object[] array, Object toInsert, int at){
+		Object[] retVal = new Object[array.length + 1];
+		retVal[at] = toInsert;
+		int i = 0;
+		for(Object obj : array){
+			if(i != at)
+				retVal[i] = obj;
+			
+			i++;
+		}
+		
+		return retVal;
+	}
 	
-	public static void logPropertyChange(Logger log, int oldVal, int newVal, String propertyName){
+	public static void logPropertyChange(Logger log, int oldVal, int newVal, ModelField propertyName){
 		logPropertyChange(log, Integer.toString(oldVal), Integer.toString(newVal), propertyName);
 	}
 	
-	public static void logPropertyChange(Logger log, boolean oldVal, boolean newVal, String propertyName){
+	public static void logPropertyChange(Logger log, boolean oldVal, boolean newVal, ModelField propertyName){
 		logPropertyChange(log, Boolean.toString(oldVal), Boolean.toString(newVal), propertyName);
 	}
 }

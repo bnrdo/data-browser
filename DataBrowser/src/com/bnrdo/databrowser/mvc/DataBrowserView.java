@@ -1,10 +1,17 @@
 package com.bnrdo.databrowser.mvc;
 
+import java.awt.AlphaComposite;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 
 import javax.swing.BorderFactory;
@@ -12,33 +19,33 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
+import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
-import javax.swing.UIManager;
 import javax.swing.table.JTableHeader;
 
+import com.bnrdo.databrowser.LineNumberTableRowHeader;
 import com.bnrdo.databrowser.listener.Disablelable;
+import com.bnrdo.pagination.Pagination;
 
 public class DataBrowserView {
-    private JPanel pnlMain;
+    private JLayeredPane pnlMain;
     private JPanel pnlPage;
     private JPanel pnlSearch;
     private JPanel pnlTable;
+    private JPanel pnlSettings;
     
     private JTextField txtSearch;
     private JComboBox cboSearch;
     private JTable tblData;
     private JButton btnSearch;
     private JButton btnSettings;
-
-    private PageButton [] pageBtns;
-    private PageButton btnFirst;
-    private PageButton btnPrev;
-    private PageButton btnNext;
-    private PageButton btnLast;
+    
+    private Pagination pagination;
     
     private JLabel lblSort;
     private JLabel lblFilter;
@@ -50,21 +57,40 @@ public class DataBrowserView {
     }
 
     private void initUI() {
-        pnlMain = new JPanel(new BorderLayout());
+        pnlMain = new JLayeredPane();
         pnlPage = createPagePanel();
         pnlSearch = createSearchPanel();
         pnlTable = createTablePanel();
-
+        pnlSettings = createSettingsPanel();
+        
         JPanel pnlSearchAndPageHolder = new JPanel();
+        JPanel pnlMainHolder = new JPanel(new BorderLayout());
         pnlSearchAndPageHolder.setLayout(new BoxLayout(pnlSearchAndPageHolder,
                 BoxLayout.LINE_AXIS));
 
         pnlSearchAndPageHolder.add(pnlSearch);
         pnlSearchAndPageHolder.add(pnlPage);
 
-        pnlMain.add(pnlTable, BorderLayout.CENTER);
-        pnlMain.add(pnlSearchAndPageHolder, BorderLayout.PAGE_START);
-        pnlMain.add(createStatPanel(), BorderLayout.PAGE_END);
+        pnlMainHolder.add(pnlTable, BorderLayout.CENTER);
+        pnlMainHolder.add(pnlSearchAndPageHolder, BorderLayout.PAGE_START);
+        pnlMainHolder.add(createStatPanel(), BorderLayout.PAGE_END);
+        
+        pnlMain.setLayout(new GridBagLayout());
+        
+        GridBagConstraints c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 0;
+        c.gridheight = 1;
+        c.gridwidth = 1;
+        c.weightx = 1;
+        c.weighty = 1;
+        c.fill = GridBagConstraints.BOTH;
+        
+        pnlMain.add(pnlMainHolder, c);
+        pnlMain.add(pnlSettings, c);
+        
+        pnlMain.setLayer(pnlMainHolder, JLayeredPane.DEFAULT_LAYER);
+        pnlMain.setLayer(pnlSettings, JLayeredPane.DRAG_LAYER);
     }
 
     private JPanel createStatPanel(){
@@ -118,64 +144,57 @@ public class DataBrowserView {
         tblData.setRowSelectionAllowed(true);
         
         JScrollPane pane = new JScrollPane(tblData);
+        LineNumberTableRowHeader tableLineNumber = new LineNumberTableRowHeader(pane, tblData);
+        tableLineNumber.setBackground(Color.LIGHT_GRAY);
+        pane.setRowHeaderView(tableLineNumber);
         retVal.add(pane, BorderLayout.CENTER);
+        
+        return retVal;
+    }
+    
+    private JPanel createSettingsPanel(){
+    	JPanel retVal = new JPanel(new BorderLayout()) {
+            @Override public void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                
+                Graphics2D g2d = (Graphics2D) g;
+                g2d.setColor(Color.BLACK);
+
+                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 5 * 0.1f));
+                g2d.fillRect(0, 0, pnlMain.getWidth(), pnlMain.getHeight());
+            }
+        };
+        
+        retVal.setOpaque(false);
+        retVal.setVisible(false);
+        
+        //just block the mouse clicks
+        retVal.addMouseListener(new MouseAdapter() {
+			@Override public void mousePressed(MouseEvent e) {e.consume();}
+			@Override public void mouseClicked(MouseEvent e) {e.consume();}
+		});
+        
         return retVal;
     }
     
     @SuppressWarnings("serial")
 	private JPanel createPagePanel(){
-    	return new JPanel(new BorderLayout()) {
+    	JPanel retVal = new JPanel(new BorderLayout()) {
             @Override
             public Dimension getPreferredSize() {
                 return new Dimension(350, 20);
             }
         };
+        pagination = new Pagination();
+        retVal.add(pagination, BorderLayout.CENTER);
+        
+        return retVal;
     }
     
-    public void createPageButtons(int[] pageNums) {
-    	if (pnlPage.getComponentCount() > 0) {
-    		pnlPage.remove(0);
-    	}
-    	
-    	JPanel pageHandle = new JPanel();
-    	
-    	pageHandle.setLayout(new BoxLayout(pageHandle, BoxLayout.LINE_AXIS));
-    	pageHandle.add(Box.createHorizontalGlue());
-    	
-    	if (pageNums.length > 1) {
-            btnFirst = new PageButton("First");
-            btnPrev = new PageButton("Prev");
-            btnFirst.setFocusable(false);
-            btnPrev.setFocusable(false);
-            btnFirst.setVisible(false);
-            btnPrev.setVisible(false);
-            pageHandle.add(btnFirst);
-            pageHandle.add(btnPrev);
-        }
-
-        pageBtns = new PageButton [pageNums.length];
-        int indxCtr = 1;
-        for (int i : pageNums) {
-            PageButton btn = new PageButton(i);
-            btn.setFocusable(false);
-            pageBtns[indxCtr - 1] = btn;
-            indxCtr++;
-            pageHandle.add(btn);
-        }
-
-        if (pageNums.length > 1) {
-            btnNext = new PageButton("Next");
-            btnLast = new PageButton("Last");
-            btnNext.setFocusable(false);
-            btnLast.setFocusable(false);
-            pageHandle.add(btnNext);
-            pageHandle.add(btnLast);
-        }
-    	
-    	pnlPage.add(pageHandle);
-    	pnlPage.repaint();
+    public Pagination getPagination(){
+    	return pagination;
     }
-
+    
     @SuppressWarnings("serial")
 	private JPanel createSearchPanel() {
         JPanel retVal = new JPanel() {
@@ -204,7 +223,7 @@ public class DataBrowserView {
                 return new Dimension(getPreferredSize().width, 20);
             }
         };
-        btnSettings = new JButton("Settings"){
+        btnSettings = new JButton("*"){
         	@Override public Dimension getMaximumSize() {
                 return new Dimension(getPreferredSize().width, 20);
             }
@@ -218,8 +237,8 @@ public class DataBrowserView {
         retVal.add(cboSearch);
         retVal.add(Box.createRigidArea(new Dimension(5, 10)));
         retVal.add(btnSearch);
-        //retVal.add(Box.createRigidArea(new Dimension(5, 10)));
-        //retVal.add(btnSettings);
+        retVal.add(Box.createRigidArea(new Dimension(5, 10)));
+        retVal.add(btnSettings);
         
         return retVal;
     }
@@ -228,7 +247,7 @@ public class DataBrowserView {
         return txtSearch;
     }
 
-    public JPanel getUI() {
+    public JComponent getUI() {
         return pnlMain;
     }
 
@@ -240,30 +259,14 @@ public class DataBrowserView {
         return cboSearch;
     }
     
+    public JButton getBtnSettings(){
+    	return btnSettings;
+    }
+    
     public JButton getBtnSearch(){
     	return btnSearch;
     }
-
-    public PageButton [] getPageBtns() {
-        return pageBtns;
-    }
-
-    public PageButton getBtnFirst() {
-        return btnFirst;
-    }
-
-    public PageButton getBtnPrev() {
-        return btnPrev;
-    }
-
-    public PageButton getBtnNext() {
-        return btnNext;
-    }
-
-    public PageButton getBtnLast() {
-        return btnLast;
-    }
-
+    
 	public JLabel getLblSort() {
 		return lblSort;
 	}
@@ -274,6 +277,10 @@ public class DataBrowserView {
 	
 	public JLabel getLblRowCount(){
 		return lblRowCount;
+	}
+	
+	public JPanel getPnlSettings(){
+		return pnlSettings;
 	}
 	
 	public void showStatus(String status){
@@ -290,12 +297,14 @@ public class DataBrowserView {
 	
 	public void disableSearch(){
 		btnSearch.setEnabled(false);
+		btnSettings.setEnabled(false);
 		cboSearch.setEnabled(false);
 		txtSearch.setEnabled(false);
 	}
 	
 	public void enableSearch(){
 		btnSearch.setEnabled(true);
+		btnSettings.setEnabled(true);
 		cboSearch.setEnabled(true);
 		txtSearch.setEnabled(true);
 	}
@@ -303,6 +312,7 @@ public class DataBrowserView {
 	public void showTableLoader(){
     	txtSearch.setEnabled(false);
     	btnSearch.setEnabled(false);
+    	btnSettings.setEnabled(false);
     	cboSearch.setEnabled(false);
     	
     	JTableHeader header = tblData.getTableHeader();
@@ -319,20 +329,12 @@ public class DataBrowserView {
     	tblData.clearSelection();
     	tblData.setEnabled(false);
     	tblData.setForeground(Color.LIGHT_GRAY);
-    	
-    	for(PageButton btns : pageBtns){
-    		btns.setEnabled(false);
-    	}
-    	
-    	if(btnFirst != null) btnFirst.setEnabled(false);
-    	if(btnPrev != null) btnPrev.setEnabled(false);
-    	if(btnNext != null) btnNext.setEnabled(false);
-    	if(btnLast != null) btnLast.setEnabled(false);
     }
 
     public void hideTableLoader(){
     	txtSearch.setEnabled(true);
     	btnSearch.setEnabled(true);
+    	btnSettings.setEnabled(true);
     	cboSearch.setEnabled(true);
     	
     	JTableHeader header = tblData.getTableHeader();
@@ -349,14 +351,14 @@ public class DataBrowserView {
     	tblData.setEnabled(true);
     	tblData.setForeground(Color.BLACK);
     	
-    	for(PageButton btns : pageBtns){
+    	/*for(PageButton btns : pageBtns){
     		btns.setEnabled(true);
     	}
     	
     	if(btnFirst != null) btnFirst.setEnabled(true);
     	if(btnPrev != null) btnPrev.setEnabled(true);
     	if(btnNext != null) btnNext.setEnabled(true);
-    	if(btnLast != null) btnLast.setEnabled(true);
+    	if(btnLast != null) btnLast.setEnabled(true);*/
     }
     
     @SuppressWarnings("serial")
@@ -402,4 +404,45 @@ public class DataBrowserView {
             return selected;
         }
     }
+    
+    /*class WorkPane extends JLayeredPane {
+        private final BackingPane backingPane;
+
+        public WorkPane() {
+
+            setLayout(new GridBagLayout());
+
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.gridx = 1;
+            gbc.gridy = 0;
+            gbc.weightx = 1;
+            gbc.weighty = 1;
+            gbc.fill = GridBagConstraints.BOTH;
+            //add(createLabel("Center", Color.BLUE), gbc);
+
+            gbc.gridx = 0;
+            gbc.gridy = 0;
+            gbc.weightx = 0;
+            gbc.weighty = 0;
+            gbc.fill = GridBagConstraints.VERTICAL;
+            //add(createLabel("Left", Color.RED), gbc);
+            gbc.gridx = 2;
+            //add(createLabel("Right", Color.GREEN), gbc);
+
+            gbc.gridx = 0;
+            gbc.gridy = 0;
+            gbc.weightx = 1;
+            gbc.weighty = 1;
+            gbc.gridheight = GridBagConstraints.REMAINDER;
+            gbc.gridwidth = GridBagConstraints.REMAINDER;
+            gbc.fill = GridBagConstraints.BOTH;
+
+            backingPane = new BackingPane();
+            backingPane.add(new SettingsPane());
+            backingPane.setVisible(false);
+            add(backingPane, gbc);
+
+            setLayer(backingPane, DEFAULT_LAYER + 1);
+
+        }*/
 }

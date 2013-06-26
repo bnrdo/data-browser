@@ -13,7 +13,7 @@ import org.jooq.TableLike;
 import org.jooq.impl.Factory;
 import org.jooq.impl.TableImpl;
 
-import com.bnrdo.databrowser.Constants.SORT_ORDER;
+import com.bnrdo.databrowser.Constants.SortOrder;
 
 public class Query{
 	
@@ -48,7 +48,7 @@ public class Query{
 		where.add(cond);
 	}
 	
-	public void addOrderBy(String orderField, SORT_ORDER order){
+	public void addOrderBy(String orderField, SortOrder order){
 		orderBy.add(orderField + "###" + order.toString());
 	}
 	
@@ -99,7 +99,7 @@ public class Query{
 		for(String s : orderBy){
 			String field = s.split("###")[0];
 			String sortOrder = s.split("###")[1];
-			if(sortOrder.equals(SORT_ORDER.DESC)){
+			if(sortOrder.equals(SortOrder.DESC)){
 				order.add(Factory.field(field).desc());
 			}else{
 				order.add(Factory.field(field).asc());

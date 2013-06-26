@@ -1,5 +1,6 @@
 package com.bnrdo.databrowser.mvc.services;
 
+import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
@@ -7,8 +8,11 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 
 import javax.swing.AbstractAction;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.table.JTableHeader;
@@ -16,8 +20,8 @@ import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
 
 import com.bnrdo.databrowser.ColumnInfoMap;
+import com.bnrdo.databrowser.Constants;
 import com.bnrdo.databrowser.Filter;
-import com.bnrdo.databrowser.Pagination;
 import com.bnrdo.databrowser.PushableTableHeaderRenderer;
 import com.bnrdo.databrowser.exception.ModelException;
 import com.bnrdo.databrowser.listener.PushableTableHeaderListener;
@@ -25,6 +29,7 @@ import com.bnrdo.databrowser.listener.TableSortListener;
 import com.bnrdo.databrowser.mvc.DataBrowserModel;
 import com.bnrdo.databrowser.mvc.DataBrowserView;
 import com.bnrdo.databrowser.mvc.DataBrowserView.PageButton;
+import com.bnrdo.pagination.listener.PaginationListener;
 
 public class ControllerService<E> {
 	
@@ -34,6 +39,22 @@ public class ControllerService<E> {
 	public ControllerService(DataBrowserView v, DataBrowserModel<E> m){
 		view = v;
 		model = m;
+	}
+	
+	@SuppressWarnings("serial")
+	public void setupSettingsInView(){
+		view.getBtnSettings().setAction(new AbstractAction("S") {
+			@Override public void actionPerformed(ActionEvent arg0) {
+				JPanel pnlSettings = view.getPnlSettings();
+				
+				if(pnlSettings.isVisible()){
+					pnlSettings.setVisible(false);
+				}else{
+					pnlSettings.setVisible(true);
+					pnlSettings.repaint();
+				}
+			}
+		});
 	}
 	
 	@SuppressWarnings("serial")
@@ -56,6 +77,8 @@ public class ControllerService<E> {
 						txt.getText(),
 						colInfo.getPropertyName(index),
 						colInfo.getColumnName(index));
+				
+				txt.requestFocusInWindow();
 			}
 		});
 		
@@ -67,6 +90,8 @@ public class ControllerService<E> {
 							txt.getText(),
 							colInfo.getPropertyName(index),
 							colInfo.getColumnName(index));
+					
+					txt.requestFocusInWindow();
 				}
 			}
 		});
@@ -107,99 +132,62 @@ public class ControllerService<E> {
 
 		tbl.repaint();
 	}
-
-	@SuppressWarnings("serial")
-	public void setupPageNumbersInView(int[] pages, int currentPageNum) {
-
-		view.createPageButtons(pages);
+	
+	public void setupPaginationInView(){
+		view.getPagination().addPaginationListener("", new PaginationListener(){
+			@Override public void pageChanged(int num) { }
+			@Override public void pageSelected(int num) {
+				pageButtonIsClicked(num);
+			}
+		});
 		
-		if(model.getPagination().getPageNumsExposed().length == 1){
-			view.getPageBtns()[0].setVisible(false);
-		}else if (model.getPagination().getPageNumsExposed().length > 1) {
-
-			view.getBtnFirst().setAction(new AbstractAction("First") {
-				public void actionPerformed(ActionEvent e) {
-					pageButtonIsClicked(Pagination.FIRST_PAGE);
-				}
-			});
-			view.getBtnPrev().setAction(new AbstractAction("Prev") {
-				public void actionPerformed(ActionEvent e) {
-					pageButtonIsClicked(Pagination.PREV_PAGE);
-				}
-			});
-			view.getBtnNext().setAction(new AbstractAction("Next") {
-				public void actionPerformed(ActionEvent e) {
-					pageButtonIsClicked(Pagination.NEXT_PAGE);
-					
-				}
-			});
-			view.getBtnLast().setAction(new AbstractAction("Last") {
-				public void actionPerformed(ActionEvent e) {
-					pageButtonIsClicked(Pagination.LAST_PAGE);
-				}
-			});
-		}
-		
-		for (final PageButton btn : view.getPageBtns()) {
-			btn.setAction(new AbstractAction(btn.getText()) {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					int pageNum = Integer.parseInt(btn.getText());
-					pageButtonIsClicked(pageNum);
-				}
-			});
-		}
-		
-		PageButton[] btns = view.getPageBtns();
-		PageButton btnFirst = view.getBtnFirst();
-		PageButton btnPrev = view.getBtnPrev();
-		PageButton btnNext = view.getBtnNext();
-		PageButton btnLast = view.getBtnLast();
-		
-		int lastPageNum = model.getPagination().getLastRawPageNum();
-		int firstPageNum = model.getPagination().getFirstRawPageNum();
-		
-		boolean isFirstPageSelected = (currentPageNum == firstPageNum);
-		boolean isLastPageSelected = (currentPageNum == lastPageNum);
-
-		for (PageButton btn : btns) {
-			btn.setSelected(Integer.parseInt(btn.getText()) == currentPageNum);
-		}
-		
-		if(btnFirst != null) btnFirst.setVisible(!(isFirstPageSelected));		
-		if(btnPrev != null) btnPrev.setVisible(!(isFirstPageSelected));
-		if(btnNext != null) btnNext.setVisible(!(isLastPageSelected));
-		if(btnLast != null) btnLast.setVisible(!(isLastPageSelected));
+		view.getPagination().setCurrentPageNum(1);
 	}
 	
-	public void pageButtonIsClicked(Object where){
-		final Pagination p = new Pagination(model.getPagination());
-		
-		if(where instanceof Integer){
-			p.setCurrentPageNum((Integer)where);
-		}else if(where instanceof String){
-			p.setCurrentPageNum((String)where);
-		}else {
-			throw new ModelException("Invalid page click destination.");
+	public void setupFilterStatus(){
+		Filter f = model.getFilter();
+		JLabel lblFilter = view.getLblFilter();
+
+		if(f.getKey().equals("")){
+			lblFilter.setVisible(false);
+		}else{
+			lblFilter.setText(f.getColAsInUI() + " : '" + f.getKey() + "'");
+			lblFilter.setIcon(new ImageIcon(getClass().getResource("/filter_16x16.gif")));
+			lblFilter.setToolTipText("Column Filtered : " + lblFilter.getText().split(":")[0] 
+											+ " | Keyword : " + lblFilter.getText().split(":")[1]);
+			
+			lblFilter.setVisible(model.isFilterDetailsShowable());
+		}
+	}
+	
+	public void setupSortStatus(){
+		JLabel lblSort = view.getLblSort();
+		lblSort.setText(model.getSortColAsInUI());
+		if(model.getSortOrder().equals(Constants.SortOrder.ASC)){
+			lblSort.setIcon(new ImageIcon(getClass().getResource("/sort_asc_16x16.png")));
+			lblSort.setToolTipText("Column Sorted : " + lblSort.getText() + " | Sort Order : Ascending");
+		}else{
+			lblSort.setIcon(new ImageIcon(getClass().getResource("/sort_desc_16x16.png")));
+			lblSort.setToolTipText("Column Sorted : " + lblSort.getText() + " | Sort Order : Descending");
 		}
 		
-		model.setPagination(p);
- 
+		lblSort.setVisible(model.isSortDetailsShowable());
+	}
+
+	public void pageButtonIsClicked(int pageNum){
 		//computation for offset and limit of sql query
-		int itemsPerPage = p.getItemsPerPage();
+		int itemsPerPage = model.getItemsPerPage();
 		int itemCount = model.getDataSourceRowCount();
-		int lastItem = p.getCurrentPageNum() * itemsPerPage;
+		int lastItem = pageNum * itemsPerPage;
 		
 		final int from = lastItem - itemsPerPage;
 		final int to = (lastItem > (itemCount)) ? itemCount : lastItem;
 		
-		/*System.out.println("items per page : " + itemsPerPage);
+		System.out.println("items per page : " + itemsPerPage);
 		System.out.println("item count : " + itemCount);
 		System.out.println("last item : " + lastItem);
 		System.out.println("from : " + from);
-		System.out.println("to : " + to);*/
-		
-		
+		System.out.println("to : " + to);
 		
 		model.populateViewTableWithScrolledSource(from, to);
 	}

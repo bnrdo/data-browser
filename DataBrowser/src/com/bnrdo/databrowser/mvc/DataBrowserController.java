@@ -11,12 +11,11 @@ import javax.swing.table.DefaultTableModel;
 import org.apache.log4j.Logger;
 
 import com.bnrdo.databrowser.ColumnInfoMap;
-import com.bnrdo.databrowser.Constants;
+import com.bnrdo.databrowser.Constants.ModelField;
 import com.bnrdo.databrowser.DBroUtil;
-import com.bnrdo.databrowser.Filter;
-import com.bnrdo.databrowser.Pagination;
 import com.bnrdo.databrowser.listener.ModelListener;
 import com.bnrdo.databrowser.mvc.services.ControllerService;
+import com.bnrdo.pagination.Pagination;
 
 public class DataBrowserController<E> implements ModelListener {
 	
@@ -33,135 +32,128 @@ public class DataBrowserController<E> implements ModelListener {
 		model.addModelListener(this);
 	}
 	
+	public void afterMVCInit(){
+		service.setupDataTableInView();
+		service.setupFilterInView();
+		service.setupPaginationInView();
+		service.setupSettingsInView();
+	}
+	
 	/* if data in model changes reflect it to the UI
 	 */
 	@SuppressWarnings("serial")
 	public void propertyChange(PropertyChangeEvent evt){
 		String propName = evt.getPropertyName();
 		
-		if(Constants.ModelFields.FN_PAGINATION.equalsIgnoreCase(propName)){
-			log.debug("Notification from model property " + Constants.ModelFields.FN_PAGINATION + " received.");
-			Pagination newVal = (Pagination) evt.getNewValue();
-			service.setupPageNumbersInView(newVal.getPageNumsExposed(), newVal.getCurrentPageNum());
-			
-			JLabel lblRowCount = view.getLblRowCount();
-			String currText = lblRowCount.getText();
-			String info = " | " + DBroUtil.moneyFormat(newVal.getItemsPerPage()) + "/page | " + DBroUtil.moneyFormat(newVal.getTotalPagecount()) + " page" + (newVal.getTotalPagecount() <= 1 ? "" : "s");
-			
-			if(currText.contains("|")) 
-				lblRowCount.setText(currText.substring(0, currText.indexOf("|")-1) + info);
-			else 
-				lblRowCount.setText(currText + info);
-			
-			lblRowCount.setVisible(model.isRowCountDetailsShowable());
-			
-		}else if(Constants.ModelFields.FN_SORT_ORDER.equalsIgnoreCase(propName)){
-			log.debug("Notification from model property " + Constants.ModelFields.FN_SORT_ORDER + " received.");
-			
-			if(view.getPageBtns().length > 0){
-				Pagination p = model.getPagination();
-				service.pageButtonIsClicked(p.getCurrentPageNum());
+		log.debug("Notification received from " + propName);
+		
+		switch(ModelField.valueOf(propName)){
+			case totalPageCount : 
+				view.getPagination().setCount((Integer) evt.getNewValue());
+				break;
 				
-				if(model.isStatusShowable())
-					view.showStatus("Sorting by " + model.getSortColAsInUI() + " " + model.getSortOrder().toString());
-			
-				JLabel lblSort = view.getLblSort();
-				lblSort.setText(model.getSortColAsInUI());
-				if(model.getSortOrder().equals(Constants.SORT_ORDER.ASC)){
-					lblSort.setIcon(new ImageIcon(getClass().getResource("/sort_asc_16x16.png")));
-					lblSort.setToolTipText("Column Sorted : " + lblSort.getText() + " | Sort Order : Ascending");
-				}else{
-					lblSort.setIcon(new ImageIcon(getClass().getResource("/sort_desc_16x16.png")));
-					lblSort.setToolTipText("Column Sorted : " + lblSort.getText() + " | Sort Order : Descending");
-				}
+			case maxExposableCount :
+				view.getPagination().setExposableCount((Integer) evt.getNewValue());
+				break;
 				
-				lblSort.setVisible(model.isSortDetailsShowable());
-			} 
-		}else if(Constants.ModelFields.FN_FILTER.equalsIgnoreCase(propName)){
-			log.debug("Notification from model property " + Constants.ModelFields.FN_FILTER + " received.");
-			
-			view.showStatus("Filtering " + model.getSortColAsInUI() + "  '" + view.getTxtSearch().getText() + "'");
-			service.pageButtonIsClicked(1);
-			
-			Filter f = model.getFilter();
-			JLabel lblFilter = view.getLblFilter();
-
-			if(f.getKey().equals("")){
-				lblFilter.setVisible(false);
-			}else{
-				lblFilter.setText(f.getColAsInUI() + " : '" + f.getKey() + "'");
-				lblFilter.setIcon(new ImageIcon(getClass().getResource("/filter_16x16.gif")));
-				lblFilter.setToolTipText("Column Filtered : " + lblFilter.getText().split(":")[0] 
-												+ " | Keyword : " + lblFilter.getText().split(":")[1]);
+			case sortOrder : {
+				Pagination p = view.getPagination();
 				
-				lblFilter.setVisible(model.isFilterDetailsShowable());
-			}
-		}else if(Constants.ModelFields.FN_COL_INFO_MAP.equalsIgnoreCase(propName)){
-			log.debug("Notification from model property " + Constants.ModelFields.FN_COL_INFO_MAP + " received.");
-			
-			ColumnInfoMap newVal = (ColumnInfoMap) evt.getNewValue();
-			model.setPagedTableModel(new DefaultTableModel(null, newVal.getColumnNames()){
-				@Override public String toString(){
-					StringBuilder bdr = new StringBuilder("Table Model Information -> [");
-					bdr.append("Row Count : ").append(getRowCount()).append(", ")
-						.append("Column Count : ").append(getColumnCount()).append(", ")
-						.append("Column Names : ").append("(");
+				if(p.getCount() > 0){
+					//reset page num to populate the table with re-queried data.
+					p.setCurrentPageNum(p.getCurrentPageNum());
 					
-					for(int i = 0; i < getColumnCount(); i++){
-						bdr.append(getColumnName(i));
-						bdr.append((i+1 < getColumnCount()) ? ", " : "");
+					/* status and stuff */
+					if(model.isStatusShowable()){
+						view.showStatus("Sorting by " + model.getSortColAsInUI() + " " + model.getSortOrder().toString());
 					}
-					bdr.append("), for the content of the table, please inspect it your self.]");
-					return bdr.toString();
+					service.setupSortStatus();
 				}
-			});
-		}else if(Constants.ModelFields.FN_IS_DATA_FOR_TABLE_LOADING.equalsIgnoreCase(propName)){
-			log.debug("Notification from model property " + Constants.ModelFields.FN_IS_DATA_FOR_TABLE_LOADING + " received.");
-			
-			boolean newVal = (Boolean) evt.getNewValue();
-			
-			if(newVal == true){
-				view.showTableLoader();
-			}else{
-				view.hideTableLoader();
-				view.hideStatus();
+				
+				break;
 			}
-		}else if(Constants.ModelFields.FN_DATA_TABLE_SOURCE_ROW_COUNT.equalsIgnoreCase(propName)){
-			log.debug("Notification from model property " + Constants.ModelFields.FN_DATA_TABLE_SOURCE_ROW_COUNT + " received.");
-			
-			JLabel lblRowCount = view.getLblRowCount();
-			int newVal = ((Integer)evt.getNewValue()).intValue();
-			
-			lblRowCount.setIcon(new ImageIcon(getClass().getResource("/row_count2_16x16.png")));
-			lblRowCount.setText(DBroUtil.moneyFormat(Integer.toString(newVal))
-						+ " row" + (newVal == 1 ? "" : "s") + " returned");
-			lblRowCount.setToolTipText("Total Record Count Returned : " + lblRowCount.getText());
-			
-			lblRowCount.setVisible(model.isRowCountDetailsShowable());
-			
-		}else if(Constants.ModelFields.FN_IS_DS_LOADING.equalsIgnoreCase(propName)){
-			log.debug("Notification from model property " + Constants.ModelFields.FN_IS_DS_LOADING + " received.");
-			
-			boolean newVal = (Boolean) evt.getNewValue();
-			
-			if(newVal == true){
-				view.disableSearch();
-				if(model.isStatusShowable())
-					view.showStatus("Loading datasource");
-			}else{
-				view.enableSearch();
-				if(model.isStatusShowable())
+			case filterKey : {
+				Pagination p = view.getPagination(); //0 page count means no record to display
+				
+				if(p.getCount() > 0){
+					/* reset current page num to populate the table with re-queried data */
+					p.setCurrentPageNum(p.getCurrentPageNum());
+					
+					/* status and stuff */
+					if(model.isStatusShowable()){
+						view.showStatus("Filtering " + model.getSortColAsInUI() + "  '" + view.getTxtSearch().getText() + "'");
+					}
+					service.setupFilterStatus();
+				}else{
+					model.getPagedTableModel().setRowCount(0);
+				}
+				break;
+			}	
+			case colInfoMap : {
+				ColumnInfoMap newVal = (ColumnInfoMap) evt.getNewValue();
+				model.setPagedTableModel(new DefaultTableModel(null, newVal.getColumnNames()){
+					@Override public String toString(){
+						StringBuilder bdr = new StringBuilder("Table Model Information -> [");
+						bdr.append("Row Count : ").append(getRowCount()).append(", ")
+							.append("Column Count : ").append(getColumnCount()).append(", ")
+							.append("Column Names : ").append("(");
+						
+						for(int i = 0; i < getColumnCount(); i++){
+							bdr.append(getColumnName(i));
+							bdr.append((i+1 < getColumnCount()) ? ", " : "");
+						}
+						bdr.append("), for the content of the table, please inspect it your self.]");
+						return bdr.toString();
+					}
+				});
+				
+				break;
+			}
+			case isDataForTableLoading : {
+				boolean newVal = (Boolean) evt.getNewValue();
+				
+				if(newVal == true){
+					view.showTableLoader();
+				}else{
+					view.hideTableLoader();
 					view.hideStatus();
+				}
+				
+				break;
 			}
-		}else if(Constants.ModelFields.FN_PAGED_TABLE_MODEL.equalsIgnoreCase(propName)){
-			log.debug("Notification from model property " + Constants.ModelFields.FN_PAGED_TABLE_MODEL + " received.");
-			
-			DefaultTableModel newVal = (DefaultTableModel) evt.getNewValue();
-			JTable tbl = view.getDataTable();
-			
-			tbl.setModel(newVal);
-			service.setupDataTableInView();
-			service.setupFilterInView();
+			case dataSourceRowCount : {
+				int newVal = ((Integer)evt.getNewValue()).intValue();
+				
+				JLabel lblRowCount = view.getLblRowCount();
+				lblRowCount.setIcon(new ImageIcon(getClass().getResource("/row_count2_16x16.png")));
+				lblRowCount.setText(DBroUtil.moneyFormat(newVal) + " row" + (newVal == 1 ? "" : "s") + " returned");
+				lblRowCount.setToolTipText("Total Record Count Returned : " + lblRowCount.getText());
+				lblRowCount.setVisible(model.isRowCountDetailsShowable());
+				
+				break;
+			}
+			case isDataSourceLoading : {
+				boolean newVal = (Boolean) evt.getNewValue();
+				
+				if(newVal == true){
+					view.disableSearch();
+					if(model.isStatusShowable())
+						view.showStatus("Loading datasource");
+				}else{
+					view.enableSearch();
+					if(model.isStatusShowable())
+						view.hideStatus();
+				}
+				
+				break;
+			}
+			case pagedTableModel : {
+				view.getDataTable().setModel((DefaultTableModel) evt.getNewValue());
+				break;
+			}
+				
+			default:
+				break;
 		}
 		//the following fragments should also be put in place ok.
 		//|| DataBrowserModel.FN_DATA_TABLE_SOURCE_FORMAT.equalsIgnoreCase(propName)

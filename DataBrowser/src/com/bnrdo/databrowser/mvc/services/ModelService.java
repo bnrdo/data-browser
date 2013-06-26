@@ -11,7 +11,7 @@ import org.apache.log4j.Logger;
 
 import com.bnrdo.databrowser.AppStat;
 import com.bnrdo.databrowser.ColumnInfoMap;
-import com.bnrdo.databrowser.Constants.JAVA_TYPE;
+import com.bnrdo.databrowser.Constants.JavaType;
 import com.bnrdo.databrowser.format.ListSourceFormat;
 import com.bnrdo.databrowser.mvc.DataBrowserModel;
 
@@ -69,7 +69,7 @@ public class ModelService<E> {
     	
     	return retVal.toString();
     }
-	private String getHSQLTypeFromSQLType(JAVA_TYPE type){
+	private String getHSQLTypeFromSQLType(JavaType type){
 		String retVal = "VARCHAR(1000)";
 		
 		switch(type){

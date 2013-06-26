@@ -10,8 +10,8 @@ import javax.swing.table.JTableHeader;
 
 import com.bnrdo.databrowser.AppStat;
 import com.bnrdo.databrowser.ColumnInfoMap;
-import com.bnrdo.databrowser.Constants.SORT_ORDER;
-import com.bnrdo.databrowser.Constants.JAVA_TYPE;
+import com.bnrdo.databrowser.Constants.SortOrder;
+import com.bnrdo.databrowser.Constants.JavaType;
 import com.bnrdo.databrowser.mvc.DataBrowserModel;
 
 public class TableSortListener<E> extends MouseAdapter implements Disablelable{
@@ -51,10 +51,10 @@ public class TableSortListener<E> extends MouseAdapter implements Disablelable{
     		String propNameToSort = map.getPropertyName(selIndex);
     		String colNameToSort = map.getColumnName(selIndex);
     		
-    		if(model.getSortOrder().equals(SORT_ORDER.ASC)){
-    			model.setSort(colNameToSort, propNameToSort, SORT_ORDER.DESC);
+    		if(model.getSortOrder().equals(SortOrder.ASC)){
+    			model.setSort(colNameToSort, propNameToSort, SortOrder.DESC);
     		}else{
-    			model.setSort(colNameToSort, propNameToSort, SORT_ORDER.ASC);
+    			model.setSort(colNameToSort, propNameToSort, SortOrder.ASC);
     		}
     	}
 	}

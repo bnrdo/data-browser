@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.bnrdo.databrowser.Constants.JAVA_TYPE;
+import com.bnrdo.databrowser.Constants.JavaType;
 
 public class ColumnInfoMap {
 	
@@ -16,7 +16,7 @@ public class ColumnInfoMap {
 	public ColumnInfoMap(){
 		map = new HashMap<Integer, List<String>>();
 	}
-	public void putInfo(int index, String colName, String propName, JAVA_TYPE propType){
+	public void putInfo(int index, String colName, String propName, JavaType propType){
 		List<String> list = map.get(index);
 		String typeStr = propType.toString();
 		
@@ -74,7 +74,7 @@ public class ColumnInfoMap {
 			list.set(1, propName);
 		}
 	}
-	public void putPropertyType(int index, JAVA_TYPE type){
+	public void putPropertyType(int index, JavaType type){
 		List<String> list = map.get(index);
 		String typeStr = type.toString();
 		
@@ -94,8 +94,8 @@ public class ColumnInfoMap {
 	public String getPropertyName(Integer index){
 		return map.get(index).get(1);
 	}
-	public JAVA_TYPE getPropertyType(int index){
-		return JAVA_TYPE.valueOf(map.get(index).get(2));
+	public JavaType getPropertyType(int index){
+		return JavaType.valueOf(map.get(index).get(2));
 	}
 	public String[] getColumnNames(){
 		String[] retVal = new String[map.size()];
